@@ -59,6 +59,17 @@ func (s *Storage) GetByEmail(ctx context.Context, email string) (*Parent, error)
 	return p, err
 }
 
+func (s *Storage) GetByID(ctx context.Context, id string) (*Parent, error) {
+	p := &Parent{}
+	err := s.db.QueryRow(ctx,
+		`SELECT parent_id, email, password_hash, name FROM parents WHERE parent_id = $1`, id,
+	).Scan(&p.ParentID, &p.Email, &p.PasswordHash, &p.Name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return p, err
+}
+
 func (s *Storage) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
 	err := s.db.QueryRow(ctx,

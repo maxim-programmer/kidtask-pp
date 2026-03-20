@@ -15,6 +15,7 @@ import (
 	"kidtask/internal/config"
 	"kidtask/internal/middleware"
 	"kidtask/internal/parent"
+	"kidtask/internal/respond"
 	"kidtask/internal/task"
 	"kidtask/internal/wish"
 )
@@ -59,6 +60,25 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	}).Methods(http.MethodGet)
+
+	r.Handle("/api/me", mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims := middleware.GetClaims(r)
+		if claims.Role == "parent" {
+			p, err := parentStorage.GetByID(r.Context(), claims.UserID)
+			if err != nil || p == nil {
+				respond.Error(w, http.StatusNotFound, "NOT_FOUND", "not found")
+				return
+			}
+			respond.JSON(w, http.StatusOK, map[string]any{"role": "parent", "user": p})
+			return
+		}
+		c, err := childStorage.GetByID(r.Context(), claims.UserID)
+		if err != nil || c == nil {
+			respond.Error(w, http.StatusNotFound, "NOT_FOUND", "not found")
+			return
+		}
+		respond.JSON(w, http.StatusOK, map[string]any{"role": "child", "user": c})
+	}))).Methods(http.MethodGet)
 
 	parentHandler.RegisterRoutes(r)
 	childHandler.RegisterRoutes(r)
