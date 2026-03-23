@@ -26,6 +26,7 @@ type Task struct {
 	TaskID           string  `json:"task_id"`
 	ParentID         string  `json:"parent_id"`
 	ChildID          string  `json:"child_id"`
+	ChildName        string  `json:"child_name,omitempty"`
 	Title            string  `json:"title"`
 	Description      *string `json:"description,omitempty"`
 	Reward           int     `json:"reward"`
@@ -72,17 +73,18 @@ func (s *Storage) GetByID(ctx context.Context, id string) (*Task, error) {
 }
 
 func (s *Storage) List(ctx context.Context, parentID, childID, status string) ([]*Task, error) {
-	query := `SELECT task_id, parent_id, child_id, title, description, reward, status, rejection_comment
-	          FROM tasks WHERE parent_id = $1`
+	query := `SELECT t.task_id, t.parent_id, t.child_id, c.name, t.title, t.description, t.reward, t.status, t.rejection_comment
+	          FROM tasks t JOIN children c ON c.child_id = t.child_id
+	          WHERE t.parent_id = $1`
 	args := []any{parentID}
 
 	if childID != "" {
 		args = append(args, childID)
-		query += ` AND child_id = $` + itoa(len(args))
+		query += ` AND t.child_id = $` + itoa(len(args))
 	}
 	if status != "" {
 		args = append(args, status)
-		query += ` AND status = $` + itoa(len(args))
+		query += ` AND t.status = $` + itoa(len(args))
 	}
 
 	rows, err := s.db.Query(ctx, query, args...)
@@ -94,7 +96,7 @@ func (s *Storage) List(ctx context.Context, parentID, childID, status string) ([
 	var tasks []*Task
 	for rows.Next() {
 		t := &Task{}
-		if err := rows.Scan(&t.TaskID, &t.ParentID, &t.ChildID, &t.Title, &t.Description, &t.Reward, &t.Status, &t.RejectionComment); err != nil {
+		if err := rows.Scan(&t.TaskID, &t.ParentID, &t.ChildID, &t.ChildName, &t.Title, &t.Description, &t.Reward, &t.Status, &t.RejectionComment); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, t)
@@ -150,12 +152,13 @@ func (s *Storage) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (s *Storage) AddBalance(ctx context.Context, childID string, amount int) error {
-	_, err := s.db.Exec(ctx,
-		`UPDATE children SET balance = balance + $1 WHERE child_id = $2`,
+func (s *Storage) AddBalance(ctx context.Context, childID string, amount int) (int, error) {
+	var newBalance int
+	err := s.db.QueryRow(ctx,
+		`UPDATE children SET balance = balance + $1 WHERE child_id = $2 RETURNING balance`,
 		amount, childID,
-	)
-	return err
+	).Scan(&newBalance)
+	return newBalance, err
 }
 
 func itoa(n int) string {
@@ -407,13 +410,14 @@ func (h *Handler) Approve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.storage.AddBalance(r.Context(), t.ChildID, t.Reward); err != nil {
+	newBalance, err := h.storage.AddBalance(r.Context(), t.ChildID, t.Reward)
+	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
 		return
 	}
 
 	t.Status = StatusCompleted
-	respond.JSON(w, http.StatusOK, map[string]any{"task": t})
+	respond.JSON(w, http.StatusOK, map[string]any{"task": t, "child_balance": newBalance})
 }
 
 func (h *Handler) Reject(w http.ResponseWriter, r *http.Request) {

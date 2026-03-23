@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
@@ -17,13 +18,32 @@ import (
 )
 
 type Child struct {
-	ChildID      string `json:"child_id"`
-	ParentID     string `json:"parent_id"`
-	Username     string `json:"username"`
-	PasswordHash string `json:"-"`
-	Name         string `json:"name"`
-	Balance      int    `json:"balance"`
-	AgeGroup     string `json:"age_group"`
+	ChildID      string     `json:"child_id"`
+	ParentID     string     `json:"parent_id"`
+	Username     string     `json:"username"`
+	PasswordHash string     `json:"-"`
+	Name         string     `json:"name"`
+	Balance      int        `json:"balance"`
+	AgeGroup     string     `json:"age_group"`
+	Birthday     *time.Time `json:"birthday,omitempty"`
+}
+
+type Progress struct {
+	TasksTotal      int `json:"tasks_total"`
+	TasksCompleted  int `json:"tasks_completed"`
+	WishesTotal     int `json:"wishes_total"`
+	WishesPurchased int `json:"wishes_purchased"`
+}
+
+func ageGroupFromBirthday(birthday *time.Time) string {
+	if birthday == nil {
+		return "junior"
+	}
+	age := int(time.Since(*birthday).Hours() / 24 / 365)
+	if age >= 11 {
+		return "senior"
+	}
+	return "junior"
 }
 
 func (c *Child) Validate() error {
@@ -32,9 +52,6 @@ func (c *Child) Validate() error {
 	}
 	if strings.TrimSpace(c.Name) == "" {
 		return errors.New("name is required")
-	}
-	if c.AgeGroup != "junior" && c.AgeGroup != "senior" {
-		return errors.New("age_group must be junior or senior")
 	}
 	return nil
 }
@@ -49,18 +66,18 @@ func NewStorage(db *pgxpool.Pool) *Storage {
 
 func (s *Storage) Create(ctx context.Context, c *Child) error {
 	return s.db.QueryRow(ctx,
-		`INSERT INTO children (parent_id, username, password_hash, name, age_group)
-		 VALUES ($1, $2, $3, $4, $5) RETURNING child_id, balance`,
-		c.ParentID, c.Username, c.PasswordHash, c.Name, c.AgeGroup,
+		`INSERT INTO children (parent_id, username, password_hash, name, age_group, birthday)
+		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING child_id, balance`,
+		c.ParentID, c.Username, c.PasswordHash, c.Name, c.AgeGroup, c.Birthday,
 	).Scan(&c.ChildID, &c.Balance)
 }
 
 func (s *Storage) GetByID(ctx context.Context, id string) (*Child, error) {
 	c := &Child{}
 	err := s.db.QueryRow(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday
 		 FROM children WHERE child_id = $1`, id,
-	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup)
+	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -70,9 +87,9 @@ func (s *Storage) GetByID(ctx context.Context, id string) (*Child, error) {
 func (s *Storage) GetByUsername(ctx context.Context, username string) (*Child, error) {
 	c := &Child{}
 	err := s.db.QueryRow(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday
 		 FROM children WHERE username = $1`, username,
-	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup)
+	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -81,7 +98,7 @@ func (s *Storage) GetByUsername(ctx context.Context, username string) (*Child, e
 
 func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, error) {
 	rows, err := s.db.Query(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday
 		 FROM children WHERE parent_id = $1`, parentID,
 	)
 	if err != nil {
@@ -92,7 +109,7 @@ func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, 
 	var children []*Child
 	for rows.Next() {
 		c := &Child{}
-		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup); err != nil {
+		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday); err != nil {
 			return nil, err
 		}
 		children = append(children, c)
@@ -102,8 +119,8 @@ func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, 
 
 func (s *Storage) Update(ctx context.Context, c *Child) error {
 	_, err := s.db.Exec(ctx,
-		`UPDATE children SET username=$1, password_hash=$2, name=$3, age_group=$4 WHERE child_id=$5`,
-		c.Username, c.PasswordHash, c.Name, c.AgeGroup, c.ChildID,
+		`UPDATE children SET username=$1, password_hash=$2, name=$3, age_group=$4, birthday=$5 WHERE child_id=$6`,
+		c.Username, c.PasswordHash, c.Name, c.AgeGroup, c.Birthday, c.ChildID,
 	)
 	return err
 }
@@ -128,6 +145,29 @@ func (s *Storage) UsernameExists(ctx context.Context, username, parentID, exclud
 		).Scan(&exists)
 	}
 	return exists, err
+}
+
+func (s *Storage) GetProgress(ctx context.Context, childID string) (*Progress, error) {
+	p := &Progress{}
+	err := s.db.QueryRow(ctx,
+		`SELECT
+			COUNT(*) FILTER (WHERE true),
+			COUNT(*) FILTER (WHERE status = 'completed')
+		 FROM tasks WHERE child_id = $1`, childID,
+	).Scan(&p.TasksTotal, &p.TasksCompleted)
+	if err != nil {
+		return nil, err
+	}
+	err = s.db.QueryRow(ctx,
+		`SELECT
+			COUNT(*) FILTER (WHERE true),
+			COUNT(*) FILTER (WHERE status IN ('purchased', 'delivered'))
+		 FROM wishes WHERE child_id = $1`, childID,
+	).Scan(&p.WishesTotal, &p.WishesPurchased)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 type Handler struct {
@@ -205,20 +245,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetClaims(r)
 
 	var req struct {
-		Name     string `json:"name"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-		AgeGroup string `json:"age_group"`
+		Name     string     `json:"name"`
+		Username string     `json:"username"`
+		Password string     `json:"password"`
+		Birthday *time.Time `json:"birthday"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respond.Error(w, http.StatusBadRequest, "BAD_REQUEST", "invalid body")
 		return
 	}
-	if req.AgeGroup == "" {
-		req.AgeGroup = "junior"
-	}
 
-	c := &Child{ParentID: claims.UserID, Username: req.Username, Name: req.Name, AgeGroup: req.AgeGroup}
+	c := &Child{
+		ParentID: claims.UserID,
+		Username: req.Username,
+		Name:     req.Name,
+		Birthday: req.Birthday,
+		AgeGroup: ageGroupFromBirthday(req.Birthday),
+	}
 	if err := c.Validate(); err != nil {
 		respond.Error(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
 		return
@@ -293,10 +336,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name     *string `json:"name"`
-		Username *string `json:"username"`
-		Password *string `json:"password"`
-		AgeGroup *string `json:"age_group"`
+		Name     *string    `json:"name"`
+		Username *string    `json:"username"`
+		Password *string    `json:"password"`
+		Birthday *time.Time `json:"birthday"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respond.Error(w, http.StatusBadRequest, "BAD_REQUEST", "invalid body")
@@ -306,8 +349,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.Name != nil {
 		c.Name = *req.Name
 	}
-	if req.AgeGroup != nil {
-		c.AgeGroup = *req.AgeGroup
+	if req.Birthday != nil {
+		c.Birthday = req.Birthday
+		c.AgeGroup = ageGroupFromBirthday(req.Birthday)
 	}
 	if req.Username != nil && *req.Username != c.Username {
 		exists, err := h.storage.UsernameExists(r.Context(), *req.Username, claims.UserID, c.ChildID)

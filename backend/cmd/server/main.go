@@ -77,7 +77,12 @@ func main() {
 			respond.Error(w, http.StatusNotFound, "NOT_FOUND", "not found")
 			return
 		}
-		respond.JSON(w, http.StatusOK, map[string]any{"role": "child", "user": c})
+		progress, err := childStorage.GetProgress(r.Context(), claims.UserID)
+		if err != nil {
+			respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
+			return
+		}
+		respond.JSON(w, http.StatusOK, map[string]any{"role": "child", "user": c, "progress": progress})
 	}))).Methods(http.MethodGet)
 
 	parentHandler.RegisterRoutes(r)
