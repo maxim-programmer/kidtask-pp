@@ -1,0 +1,38 @@
+services:
+  backend:
+    build: ./backend
+    container_name: kidtask_backend
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - kidtask-net
+    ports:
+      - "8080:8080"
+    command: ["./kidtask"]
+
+  db:
+    image: postgres:17-alpine
+    container_name: kidtask_db
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - kidtask-net
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 5s
+      retries: 5
+      start_period: 5s
+      timeout: 2s
+
+volumes:
+  pgdata:
+
+networks:
+  kidtask-net:
