@@ -1,12 +1,8 @@
 package parent
-
 import (
 	"testing"
-
 	"github.com/stretchr/testify/assert"
 )
-
-// Parent.Validate тесты
 func TestParentValidate(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -54,7 +50,6 @@ func TestParentValidate(t *testing.T) {
 			wantError: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.parent.Validate()

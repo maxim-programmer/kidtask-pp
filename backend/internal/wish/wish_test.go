@@ -1,12 +1,8 @@
 package wish
-
 import (
 	"testing"
-
 	"github.com/stretchr/testify/assert"
 )
-
-// Wish.Validate тесты
 func TestWishValidate(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -36,7 +32,6 @@ func TestWishValidate(t *testing.T) {
 			wantError: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.wish.Validate()
@@ -48,7 +43,6 @@ func TestWishValidate(t *testing.T) {
 		})
 	}
 }
-
 func stringPtr(s string) *string {
 	return &s
 }

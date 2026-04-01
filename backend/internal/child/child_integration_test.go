@@ -1,8 +1,4 @@
-//go:build integration
-// +build integration
-
 package child
-
 import (
 	"bytes"
 	"context"
@@ -11,48 +7,34 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"kidtask/internal/auth"
 	"kidtask/internal/middleware"
 	"kidtask/internal/testutil"
 )
-
 func setupChildTest(t *testing.T) (*pgxpool.Pool, *mux.Router, string) {
 	db := testutil.SetupTestDB(t)
-
-	// Создаём родителя с уникальным email
 	parentEmail := testutil.UniqueEmail("parent")
 	parentHash, _ := auth.HashPassword("parentpass")
 	parentID := testutil.CreateTestParent(t, db, parentEmail, parentHash, "Parent")
-
 	storage := NewStorage(db)
 	jwtSecret := "test-secret"
 	handler := NewHandler(storage, jwtSecret, middleware.Auth(jwtSecret))
-
-	// Создаём роутер
 	r := mux.NewRouter()
 	handler.RegisterRoutes(r)
-
 	return db, r, parentID
 }
-
 func TestChildCreateIntegration(t *testing.T) {
 	db, router, parentID := setupChildTest(t)
 	defer db.Close()
-
 	jwtSecret := "test-secret"
 	parentToken, err := auth.GenerateToken(parentID, "parent", "", jwtSecret)
 	require.NoError(t, err)
-
-	// Создаём первого ребёнка для проверки дубликата
 	existingUsername := testutil.UniqueUsername("existing")
 	childHash, _ := auth.HashPassword("childpass")
-
 	var existingChildID string
 	err = db.QueryRow(context.Background(),
 		`INSERT INTO children (parent_id, username, password_hash, name, age_group, balance) 
@@ -60,7 +42,6 @@ func TestChildCreateIntegration(t *testing.T) {
 		parentID, existingUsername, childHash, "Existing Child", "junior",
 	).Scan(&existingChildID)
 	require.NoError(t, err)
-
 	tests := []struct {
 		name        string
 		request     map[string]interface{}
@@ -104,7 +85,6 @@ func TestChildCreateIntegration(t *testing.T) {
 			checkAge:   false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(tt.request)
@@ -112,9 +92,7 @@ func TestChildCreateIntegration(t *testing.T) {
 			req.Header.Set("Authorization", "Bearer "+parentToken)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-
 			assert.Equal(t, tt.wantStatus, w.Code)
-
 			if tt.wantStatus == http.StatusCreated && tt.checkAge {
 				var resp map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
@@ -125,19 +103,12 @@ func TestChildCreateIntegration(t *testing.T) {
 		})
 	}
 }
-
 func TestChildLoginIntegration(t *testing.T) {
 	db, router, parentID := setupChildTest(t)
 	defer db.Close()
-
-	// Удалите эту строку:
-	// jwtSecret := "test-secret"
-
-	// Создаём ребёнка с уникальным username
 	childUsername := testutil.UniqueUsername("testchild")
 	childHash, err := auth.HashPassword("childpass")
 	require.NoError(t, err)
-
 	var childID string
 	err = db.QueryRow(context.Background(),
 		`INSERT INTO children (parent_id, username, password_hash, name, age_group, balance) 
@@ -145,7 +116,6 @@ func TestChildLoginIntegration(t *testing.T) {
 		parentID, childUsername, childHash, "Test Child", "junior",
 	).Scan(&childID)
 	require.NoError(t, err)
-
 	tests := []struct {
 		name       string
 		request    map[string]string
@@ -168,16 +138,13 @@ func TestChildLoginIntegration(t *testing.T) {
 			wantStatus: http.StatusUnauthorized,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(tt.request)
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/child/login", bytes.NewBuffer(body))
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-
 			assert.Equal(t, tt.wantStatus, w.Code)
-
 			if tt.wantStatus == http.StatusOK {
 				var resp map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &resp)

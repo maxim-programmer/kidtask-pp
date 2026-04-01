@@ -1,12 +1,8 @@
 package task
-
 import (
 	"testing"
-
 	"github.com/stretchr/testify/assert"
 )
-
-// Task.Validate тесты
 func TestTaskValidate(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -46,7 +42,6 @@ func TestTaskValidate(t *testing.T) {
 			wantError: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.task.Validate()
