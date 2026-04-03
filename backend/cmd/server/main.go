@@ -56,9 +56,33 @@ func main() {
 
 	r := mux.NewRouter()
 
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
+	}).Methods(http.MethodGet)
+
+	r.HandleFunc("/api/stats", func(w http.ResponseWriter, r *http.Request) {
+		var parents, children int
+		db.QueryRow(context.Background(), `SELECT COUNT(*) FROM parents`).Scan(&parents)
+		db.QueryRow(context.Background(), `SELECT COUNT(*) FROM children`).Scan(&children)
+		respond.JSON(w, http.StatusOK, map[string]any{
+			"parents":  parents,
+			"children": children,
+			"total":    parents + children,
+		})
 	}).Methods(http.MethodGet)
 
 	r.Handle("/api/me", mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
