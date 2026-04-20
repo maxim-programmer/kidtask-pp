@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { edit_wish, remove_wish } from '../../functions/parent-actions'
+  import { edit_wish, remove_wish } from '../../functions/parent_actions'
 </script>
 
 <style>

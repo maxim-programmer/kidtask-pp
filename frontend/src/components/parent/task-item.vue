@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { mark_task_done, mark_task_fix, remove_task } from '../../functions/parent-actions'
+  import { mark_task_done, mark_task_fix, remove_task } from '../../functions/parent_actions'
 </script>
 
 <style>

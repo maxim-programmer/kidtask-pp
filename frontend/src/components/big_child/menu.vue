@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { add_task } from '../../functions/parent-actions'
+  import { add_task } from '../../functions/parent_actions'
 </script>
 
 <style>
