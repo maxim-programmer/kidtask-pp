@@ -1,4 +1,7 @@
 <script setup lang="ts">
+  defineProps<{
+    username: string
+  }>()
 </script>
 
 <style>

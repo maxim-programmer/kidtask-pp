@@ -1,7 +1,15 @@
 <script setup lang="ts">
+  import { add_wish } from '../../functions/child_actions'
+
+  function handleSubmit() {
+    const title = (document.getElementById('title-value') as HTMLInputElement).value
+    const description = (document.getElementById('description-value') as HTMLInputElement).value
+    add_wish(title, description)
+  }
 </script>
+
 <style>
-  @import '../assets/ch710.css';
+  @import '../../assets/ch710.css';
 </style>
 
 <template>
@@ -11,7 +19,7 @@
       <input id="title-value" />
       <label>Описание</label>
       <input id="description-value" />
-      <button @click="new_task">Добавить</button>
+      <button @click="handleSubmit">Добавить</button>
     </form>
   </div>
 </template>

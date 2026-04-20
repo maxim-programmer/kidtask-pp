@@ -3,7 +3,7 @@
 </script>
 
 <style>
-  @import '../../assets/ср1114.css';
+  @import '../../assets/ch1114.css';
 </style>
 
 <template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import check_reg_credentials from '../../functions/parent_actions'
+  import { check_reg_credentials } from '../../functions/parent_actions'
 </script>
 
 <style>

@@ -1,5 +1,10 @@
 <script setup lang="ts">
   import { mark_task_done, mark_task_fix, remove_task } from '../../functions/parent_actions'
+
+  defineProps<{
+    title: string
+    description: string
+  }>()
 </script>
 
 <style>

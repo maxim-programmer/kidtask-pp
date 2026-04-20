@@ -1,7 +1,7 @@
 <script setup lang="ts">
 </script>
 <style>
-  @import '../assets/ch1114.css';
+  @import "../../assets/ch710.css";
 </style>
 
 <template>

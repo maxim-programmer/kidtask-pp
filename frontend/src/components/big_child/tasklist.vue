@@ -2,7 +2,7 @@
 </script>
 
 <style>
-  @import '../assets/ch1114.css';
+  @import "../../assets/ch1114.css";
 </style>
 
 <template>

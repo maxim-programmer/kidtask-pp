@@ -37,3 +37,8 @@ export const test_child_user2 = {
 export function check_login_credentials(): boolean {
   return true;
 }
+
+export function add_wish(title: string, description: string): void {
+  console.log('add_wish', title, description)
+  // TODO: отправить на бэкенд
+}

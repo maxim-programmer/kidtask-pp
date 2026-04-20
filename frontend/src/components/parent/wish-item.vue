@@ -1,5 +1,11 @@
 <script setup lang="ts">
   import { edit_wish, remove_wish } from '../../functions/parent_actions'
+
+  defineProps<{
+    title: string
+    description: string
+    price: number | string
+  }>()
 </script>
 
 <style>
