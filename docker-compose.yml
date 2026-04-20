@@ -1,4 +1,5 @@
 services:
+
   db:
     image: postgres:17-alpine
     container_name: kidtask_db
@@ -29,6 +30,17 @@ services:
       - kidtask-net
     ports:
       - "8080:8080"
+    command: ["./kidtask"]
+
+  frontend:
+    build: ./frontend
+    container_name: kidtask_frontend
+    depends_on:
+      - backend
+    networks:
+      - kidtask-net
+    ports:
+      - "80:80"
 
 volumes:
   pgdata:
