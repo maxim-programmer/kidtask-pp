@@ -1,0 +1,21 @@
+app icon
+<a href="https://www.flaticon.com/free-icons/smile" title="smile icons">Smile icons created by Freepik - Flaticon</a>
+
+child 7-10 iconpack
+<a href="https://www.flaticon.com/free-icons/ui" title="ui icons">Ui icons created by kendis lasman - Flaticon</a>
+
+child 11-14 iconpack
+<a href="https://www.flaticon.com/free-icons/my-profile" title="my profile icons">My profile icons created by alkhalifi design - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/user" title="user icons">User icons created by Phoenix Group - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/log-out" title="log out icons">Log out icons created by Any Icon - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/gift" title="gift icons">Gift icons created by Freepik - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/smart-cart" title="smart cart icons">Smart cart icons created by Freepik - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/prize" title="prize icons">Prize icons created by Hilmy Abiyyu A. - Flaticon</a>
+
+parent iconpack
+<a href="https://www.flaticon.com/free-icons/ready" title="ready icons">Ready icons created by Lizel Arina - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/trash-bin" title="trash bin icons">Trash bin icons created by Bharat Icons - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/ui" title="ui icons">Ui icons created by Bharat Icons - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/pencil" title="pencil icons">Pencil icons created by riajulislam - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/profile-image" title="profile image icons">Profile image icons created by Md Tanvirul Haque - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Lizel Arina - Flaticon</a>
