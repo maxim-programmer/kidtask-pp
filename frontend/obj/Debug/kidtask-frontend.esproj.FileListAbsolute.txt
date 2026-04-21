@@ -1,3 +1,0 @@
-C:\Users\yekat\Documents\uni\mtuci\kidtask\kidtask-frontend\obj\Debug\kidtask-frontend.esproj.CoreCompileInputs.cache
-C:\Users\yekat\Documents\uni\mtuci\kidtask\code\kidtask-frontend\obj\Debug\kidtask-frontend.esproj.CoreCompileInputs.cache
-C:\Users\yekat\Documents\uni\mtuci\kidtask\code\kidtask-pp\frontend\obj\Debug\kidtask-frontend.esproj.CoreCompileInputs.cache
