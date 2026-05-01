@@ -21,7 +21,7 @@
         <div v-if="selectedChild">
           <div class="balance-card">
             <div>
-              <div class="balance-label">Баланс {{ selectedChild.name }}</div>
+              <div class="balance-label">Баланс</div>
               <div class="balance-meta">{{ selectedChild.age_group === 'junior' ? '7–10 лет' : '11–14 лет' }}</div>
             </div>
             <div class="balance-value">⭐ {{ selectedChild.balance }}</div>
@@ -450,62 +450,58 @@ export default {
 .task-card__comment { font-size: 12px; color: #888; margin-top: 2px; }
 .task-card__rework { font-size: 12px; color: #e53e3e; margin-top: 4px; }
 .task-card__status-label { font-size: 11px; color: #aaa; margin-top: 4px; }
-.task-card__actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-.reward-badge { font-size: 13px; font-weight: 700; color: #4f7ef7; background: #eef2ff; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
-.icon-btn { width: 30px; height: 30px; border-radius: 7px; border: none; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.icon-btn--approve { background: #e6f9f0; color: #22c55e; }
-.icon-btn--approve:hover { background: #22c55e; color: #fff; }
-.icon-btn--reject { background: #fff5f5; color: #e53e3e; }
-.icon-btn--reject:hover { background: #e53e3e; color: #fff; }
-.icon-btn--edit { background: #f0f4ff; color: #4f7ef7; }
-.icon-btn--edit:hover { background: #4f7ef7; color: #fff; }
-.icon-btn--delete { background: #f5f5f5; color: #bbb; }
-.icon-btn--delete:hover { background: #e53e3e; color: #fff; }
+.task-card__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.reward-badge { background: #fff8e1; color: #d97706; border-radius: 12px; padding: 3px 10px; font-size: 13px; font-weight: 700; }
+.icon-btn { width: 30px; height: 30px; border-radius: 8px; border: none; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.icon-btn--approve { background: #dcfce7; color: #16a34a; }
+.icon-btn--reject { background: #fee2e2; color: #dc2626; }
+.icon-btn--edit { background: #e0f2fe; color: #0284c7; }
+.icon-btn--delete { background: #f5f5f5; color: #888; }
 
-.wish-card { padding: 14px; background: #f8f9ff; border-radius: 12px; margin-bottom: 10px; }
-.wish-card--full { border: 1px solid #e8eeff; }
-.wish-card__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.wish-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.wish-card--full { padding: 16px; }
+.wish-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
 .wish-card__info { flex: 1; }
-.wish-card__title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
-.wish-card__desc { font-size: 13px; color: #888; }
-.wish-card__status-col { margin-left: 10px; }
-.wish-status { padding: 4px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
-.wish-status--awaiting_price { background: #fef9e7; color: #b45309; }
-.wish-status--available { background: #eef2ff; color: #4f7ef7; }
-.wish-status--purchased { background: #fef3c7; color: #92400e; }
-.wish-status--delivered { background: #dcfce7; color: #166534; }
-.wish-steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.step { font-size: 12px; color: #ccc; font-weight: 600; }
-.step--done { color: #4f7ef7; }
-.arrow { color: #ddd; font-size: 12px; }
-.wish-progress-bar { height: 6px; background: #e0e0e0; border-radius: 3px; margin-bottom: 10px; overflow: hidden; }
-.wish-progress-fill { height: 100%; background: #4f7ef7; border-radius: 3px; transition: width 0.3s; }
+.wish-card__title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.wish-card__desc { font-size: 12px; color: #888; margin-top: 2px; }
+.wish-card__status-col { flex-shrink: 0; }
+.wish-status { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+.wish-status--awaiting_price { background: #fef9c3; color: #ca8a04; }
+.wish-status--available { background: #dcfce7; color: #16a34a; }
+.wish-status--purchased { background: #dbeafe; color: #2563eb; }
+.wish-status--delivered { background: #f3e8ff; color: #7c3aed; }
+
+.wish-steps { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.step { color: #ccc; }
+.step--done { color: #4f7ef7; font-weight: 600; }
+.arrow { color: #ddd; }
+
+.wish-progress-bar { height: 6px; background: #e8e8e8; border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+.wish-progress-fill { height: 100%; background: linear-gradient(90deg, #4f7ef7, #818cf8); border-radius: 4px; transition: width 0.3s; }
+
 .wish-card__actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.price-set-row { display: flex; gap: 6px; flex: 1; }
-.price-input { flex: 1; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; min-width: 0; }
+.wish-card__price-row { display: flex; gap: 8px; align-items: center; flex: 1; }
+.price-set-row { display: flex; gap: 8px; align-items: center; }
+.price-input { width: 100px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
 .price-input:focus { border-color: #4f7ef7; }
-.wish-price-display { font-size: 18px; font-weight: 700; color: #4f7ef7; }
-.btn-small { padding: 7px 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-.wish-btns { display: flex; gap: 6px; align-items: center; }
-.btn-deliver { padding: 8px 14px; background: #22c55e; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-.btn-deliver:hover:not(:disabled) { background: #16a34a; }
-.btn-deliver:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-small { padding: 6px 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.wish-price-display { font-size: 15px; font-weight: 700; color: #f59e0b; }
+.wish-btns { display: flex; align-items: center; gap: 6px; }
+.btn-deliver { padding: 6px 14px; background: #f3e8ff; color: #7c3aed; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
-.wish-card__price-row { display: flex; gap: 8px; margin-top: 8px; }
-
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 300; }
-.modal { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 380px; }
-.modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-.field { margin-bottom: 12px; }
-.field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
-.field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; font-family: inherit; }
-.field input:focus { border-color: #4f7ef7; }
-.modal-textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; font-size: 14px; outline: none; resize: vertical; font-family: inherit; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 300; }
+.modal { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 360px; }
+.modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+.modal-textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; resize: vertical; box-sizing: border-box; }
 .modal-textarea:focus { border-color: #4f7ef7; }
-.modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
-.btn-outline { padding: 10px 18px; background: transparent; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-primary-sm { padding: 10px 20px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-outline { flex: 1; padding: 10px; border: 1.5px solid #ddd; background: #fff; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: #666; }
+.btn-primary-sm { flex: 1; padding: 10px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-primary-sm:hover:not(:disabled) { background: #3a6be0; }
 .btn-primary-sm:disabled { opacity: 0.6; cursor: not-allowed; }
-.error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 8px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+.field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; }
+.field input:focus { border-color: #4f7ef7; }
+.error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 10px; }
 </style>
