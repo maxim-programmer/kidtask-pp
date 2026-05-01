@@ -49,7 +49,7 @@ func main() {
 	taskStorage := task.NewStorage(db)
 	wishStorage := wish.NewStorage(db)
 
-	parentHandler := parent.NewHandler(parentStorage, cfg.JWTSecret)
+	parentHandler := parent.NewHandler(parentStorage, cfg.JWTSecret, mw)
 	childHandler := child.NewHandler(childStorage, cfg.JWTSecret, mw)
 	taskHandler := task.NewHandler(taskStorage, mw)
 	wishHandler := wish.NewHandler(wishStorage, mw)
