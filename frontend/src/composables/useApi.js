@@ -24,9 +24,11 @@ export function useApi() {
   const login = (data) => api.post('/auth/login', data)
   const loginChild = (data) => api.post('/auth/child/login', data)
   const getMe = () => api.get('/me')
+  const updateMe = (data) => api.patch('/me', data)
 
   const getChildren = () => api.get('/children')
   const createChild = (data) => api.post('/children', data)
+  const updateChild = (id, data) => api.patch(`/children/${id}`, data)
   const deleteChild = (id) => api.delete(`/children/${id}`)
 
   const getTasks = (params) => api.get('/tasks', { params })
@@ -47,8 +49,8 @@ export function useApi() {
   const getStats = () => api.get('/stats')
 
   return {
-    register, login, loginChild, getMe,
-    getChildren, createChild, deleteChild,
+    register, login, loginChild, getMe, updateMe,
+    getChildren, createChild, updateChild, deleteChild,
     getTasks, createTask, updateTask, deleteTask, submitTask, approveTask, rejectTask,
     getWishes, createWish, updateWish, deleteWish, purchaseWish, deliverWish,
     getStats,
