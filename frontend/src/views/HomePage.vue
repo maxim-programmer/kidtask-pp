@@ -98,6 +98,7 @@
       <div class="footer__inner">
         <span class="logo logo--white">kid<span class="logo__accent">TASK</span></span>
         <p class="footer__copy">© 2026 KidTask</p>
+        <router-link to="/admin/login" class="admin-link">Для администраторов</router-link>
       </div>
     </footer>
   </div>
@@ -175,6 +176,8 @@ export default {
 .footer { background: #1a1a1a; padding: 32px 0; margin-top: auto; }
 .footer__inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
 .footer__copy { font-size: 14px; color: #888; }
+.admin-link { font-size: 13px; color: #555; text-decoration: none; transition: color 0.15s; }
+.admin-link:hover { color: #4f7ef7; }
 @media (max-width: 768px) {
   .hero__inner { grid-template-columns: 1fr; gap: 40px; }
   .hero__title { font-size: 40px; }

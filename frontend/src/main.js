@@ -14,7 +14,8 @@ import ChildWishlistJunior from './views/child/junior/ChildWishlist.vue'
 import ChildDashboardSenior from './views/child/senior/ChildDashboard.vue'
 import ChildTasksSenior from './views/child/senior/ChildTasks.vue'
 import ChildWishlistSenior from './views/child/senior/ChildWishlist.vue'
-import { useAuth } from './composables/useAuth'
+import AdminLogin from './views/admin/AdminLogin.vue'
+import AdminDashboard from './views/admin/AdminDashboard.vue'
 
 const routes = [
   { path: '/', component: HomePage },
@@ -30,6 +31,8 @@ const routes = [
   { path: '/child/senior/dashboard', component: ChildDashboardSenior, meta: { requiresAuth: true, role: 'child', ageGroup: 'senior' } },
   { path: '/child/senior/tasks', component: ChildTasksSenior, meta: { requiresAuth: true, role: 'child', ageGroup: 'senior' } },
   { path: '/child/senior/wishlist', component: ChildWishlistSenior, meta: { requiresAuth: true, role: 'child', ageGroup: 'senior' } },
+  { path: '/admin/login', component: AdminLogin },
+  { path: '/admin', component: AdminDashboard, meta: { requiresAdmin: true } },
 ]
 
 const router = createRouter({
@@ -38,6 +41,16 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAdmin) {
+    const saved = localStorage.getItem('kt_admin_secret')
+    if (!saved) {
+      next('/admin/login')
+      return
+    }
+    next()
+    return
+  }
+
   const token = localStorage.getItem('kt_token')
   const role = localStorage.getItem('kt_role')
   const ageGroup = localStorage.getItem('kt_age_group')
