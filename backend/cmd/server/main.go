@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kidtask/internal/admin"
 	"kidtask/internal/child"
 	"kidtask/internal/config"
 	"kidtask/internal/middleware"
@@ -48,18 +49,20 @@ func main() {
 	childStorage := child.NewStorage(db)
 	taskStorage := task.NewStorage(db)
 	wishStorage := wish.NewStorage(db)
+	adminStorage := admin.NewStorage(db)
 
 	parentHandler := parent.NewHandler(parentStorage, cfg.JWTSecret, mw)
 	childHandler := child.NewHandler(childStorage, cfg.JWTSecret, mw)
 	taskHandler := task.NewHandler(taskStorage, mw)
 	wishHandler := wish.NewHandler(wishStorage, mw)
+	adminHandler := admin.NewHandler(adminStorage, mw, cfg.AdminSecret)
 
 	r := mux.NewRouter()
 
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Admin-Secret")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)
@@ -113,6 +116,7 @@ func main() {
 	childHandler.RegisterRoutes(r)
 	taskHandler.RegisterRoutes(r)
 	wishHandler.RegisterRoutes(r)
+	adminHandler.RegisterRoutes(r)
 
 	log.Printf("server starting on %s", cfg.ServerAddr)
 	if err := http.ListenAndServe(cfg.ServerAddr, r); err != nil {
