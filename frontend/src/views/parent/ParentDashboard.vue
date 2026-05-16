@@ -33,7 +33,7 @@
                 <svg viewBox="0 0 36 36">
                   <circle cx="18" cy="18" r="15" fill="none" stroke="#e8e8e8" stroke-width="3"/>
                   <circle cx="18" cy="18" r="15" fill="none" stroke="#4f7ef7" stroke-width="3"
-                    :stroke-dasharray="`${wishProgress} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+                    :stroke-dasharray="`${wishProgressCircle} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
                 </svg>
                 <span class="progress-text">{{ progress.wishes_done }}/{{ progress.wishes_total }}</span>
               </div>
@@ -58,7 +58,6 @@
             <button :class="['vtab', { 'vtab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
           </div>
 
-          <!-- ОБЗОР -->
           <div v-if="view === 'overview'">
             <div class="section">
               <h3 class="section-title">Задания на проверке</h3>
@@ -93,7 +92,6 @@
             </div>
           </div>
 
-          <!-- ЗАДАНИЯ -->
           <div v-if="view === 'tasks'">
             <div class="filter-bar">
               <button
@@ -122,7 +120,6 @@
             </div>
           </div>
 
-          <!-- ВИШЛИСТ -->
           <div v-if="view === 'wishlist'">
             <div class="filter-bar">
               <button
@@ -151,7 +148,7 @@
               </div>
 
               <div v-if="w.price" class="wish-progress-bar">
-                <div class="wish-progress-fill" :style="{ width: Math.min(100, (selectedChild.balance / w.price) * 100) + '%' }"></div>
+                <div class="wish-progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
               </div>
 
               <div class="wish-card__actions">
@@ -178,7 +175,6 @@
       </div>
     </div>
 
-    <!-- Модалки -->
     <div v-if="rejectModal" class="modal-overlay" @click.self="rejectModal = false">
       <div class="modal">
         <h3>Вернуть на доработку</h3>
@@ -287,7 +283,7 @@ export default {
       if (!this.wishFilter) return this.wishes
       return this.wishes.filter(w => w.status === this.wishFilter)
     },
-    wishProgress() {
+    wishProgressCircle() {
       if (!this.progress.wishes_total) return 0
       return Math.round((this.progress.wishes_done / this.progress.wishes_total) * 100)
     },
@@ -321,7 +317,19 @@ export default {
         tasks_done: this.tasks.filter(x => x.status === 'completed').length
       }
     },
-    async reload() { await this.selectChild(this.selectedChild) },
+    async reload() {
+      const { getChildren } = useApi()
+      const res = await getChildren()
+      this.children = res.data.children || []
+      const updated = this.children.find(c => c.child_id === this.selectedChild.child_id)
+      if (updated) this.selectedChild = updated
+      await this.selectChild(this.selectedChild)
+    },
+    wishProgress(w) {
+      if (!w.price) return 0
+      if (w.status === 'purchased' || w.status === 'delivered') return 100
+      return Math.min(100, Math.round((this.selectedChild.balance / w.price) * 100))
+    },
     statusLabel(s) {
       return { active: 'Активное', pending_review: 'На проверке', needs_rework: 'На доработке', completed: 'Выполнено' }[s] || s
     },

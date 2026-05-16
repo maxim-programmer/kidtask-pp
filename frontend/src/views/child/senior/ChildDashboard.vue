@@ -1,3 +1,4 @@
+
 <template>
   <SeniorLayout>
     <div v-if="loading" class="loading">Загрузка...</div>
@@ -8,7 +9,6 @@
         <button :class="['tab', { 'tab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
       </div>
 
-      <!-- ПРОГРЕСС -->
       <div v-if="view === 'progress'">
         <div class="balance-card">
           <div class="balance-label">Мой баланс</div>
@@ -40,7 +40,6 @@
         </div>
       </div>
 
-      <!-- ЗАДАНИЯ -->
       <div v-if="view === 'tasks'">
         <div class="filter-bar">
           <button v-for="f in taskFilters" :key="f.value"
@@ -72,7 +71,6 @@
         </div>
       </div>
 
-      <!-- ВИШЛИСТ -->
       <div v-if="view === 'wishlist'">
         <div v-if="wishes.length === 0" class="empty">Добавь свою первую цель</div>
         <div v-for="w in wishes" :key="w.wish_id" class="wish-card">
@@ -93,7 +91,7 @@
             <span :class="['step', { 'step--done': w.status === 'delivered' }]">🎁 Доставлено</span>
           </div>
           <div v-if="w.price" class="progress-bar">
-            <div class="progress-fill" :style="{ width: Math.min(100, ((user?.balance || 0) / w.price) * 100) + '%' }"></div>
+            <div class="progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
           </div>
           <div class="wish-actions">
             <button
@@ -195,6 +193,11 @@ export default {
         const tr = await getTasks().catch(() => ({ data: { tasks: [] } }))
         this.tasks = tr.data.tasks || []
       } finally { this.loading = false }
+    },
+    wishProgress(w) {
+      if (!w.price) return 0
+      if (w.status === 'purchased' || w.status === 'delivered') return 100
+      return Math.min(100, Math.round(((this.user?.balance || 0) / w.price) * 100))
     },
     async submit(task) {
       if (task.status !== 'active' && task.status !== 'needs_rework') return
