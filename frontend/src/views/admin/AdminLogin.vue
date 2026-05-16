@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="card">
-      <div class="logo">kid<span class="accent">TASK</span> <span class="badge">Admin</span></div>
+      <div class="logo" @click="$router.push('/')">kid<span class="accent">TASK</span> <span class="badge">Admin</span></div>
       <h1 class="title">Вход для администратора</h1>
       <div class="field">
         <label>Секретный ключ</label>
@@ -53,7 +53,8 @@ export default {
 <style scoped>
 .page { min-height: 100vh; background: #f5f7ff; display: flex; align-items: center; justify-content: center; }
 .card { background: #fff; border-radius: 20px; padding: 40px 36px; width: 90%; max-width: 380px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
-.logo { font-size: 22px; font-weight: 800; color: #1a1a1a; text-align: center; margin-bottom: 8px; }
+.logo { font-size: 22px; font-weight: 800; color: #1a1a1a; text-align: center; margin-bottom: 8px; cursor: pointer; user-select: none; transition: opacity 0.15s; }
+.logo:hover { opacity: 0.75; }
 .accent { color: #4f7ef7; }
 .badge { font-size: 11px; font-weight: 700; background: #4f7ef7; color: #fff; border-radius: 6px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; }
 .title { font-size: 18px; font-weight: 700; text-align: center; color: #444; margin-bottom: 28px; }
