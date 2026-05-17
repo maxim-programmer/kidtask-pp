@@ -36,7 +36,11 @@ export default {
         const res = await fetch('/api/admin/stats', {
           headers: { 'X-Admin-Secret': this.secret }
         })
-        if (res.status === 401) {
+        if (res.status === 401 || res.status === 403) {
+          this.error = 'Неверный секретный ключ'
+          return
+        }
+        if (!res.ok) {
           this.error = 'Неверный секретный ключ'
           return
         }
