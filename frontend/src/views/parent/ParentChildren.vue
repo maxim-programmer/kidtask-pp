@@ -41,7 +41,7 @@
         </div>
         <div class="field">
           <label>День рождения</label>
-          <input v-model="form.birthday" type="date" />
+          <input v-model="form.birthday" type="date" required />
         </div>
         <div v-if="error" class="error-msg">{{ error }}</div>
         <button class="btn-primary" @click="addChild" :disabled="saving">
@@ -85,7 +85,12 @@ export default {
       } finally { this.loading = false }
     },
     async addChild() {
-      this.saving = true; this.error = ''
+      this.error = ''
+      if (!this.form.name) { this.error = 'Введите имя'; return }
+      if (!this.form.username) { this.error = 'Введите логин'; return }
+      if (!this.form.password) { this.error = 'Введите пароль'; return }
+      if (!this.form.birthday) { this.error = 'Укажите дату рождения'; return }
+      this.saving = true
       const { createChild } = useApi()
       try {
         const payload = {
@@ -93,9 +98,7 @@ export default {
           username: this.form.username,
           password: this.form.password,
         }
-        if (this.form.birthday) {
-          payload.birthday = new Date(this.form.birthday + 'T00:00:00Z').toISOString()
-        }
+        payload.birthday = new Date(this.form.birthday + 'T00:00:00Z').toISOString()
         await createChild(payload)
         this.showModal = false
         this.form = { name: '', username: '', password: '', birthday: '' }
