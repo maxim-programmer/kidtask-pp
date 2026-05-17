@@ -5,10 +5,14 @@
     <div v-if="loading" class="loading">Загрузка...</div>
     <div v-else>
       <div v-for="child in children" :key="child.child_id" class="child-card">
-        <div class="child-card__avatar">{{ child.name[0] }}</div>
+        <div class="child-card__avatar" :class="avatarClass(child)">{{ child.name[0] }}</div>
         <div class="child-card__info">
           <div class="child-card__name">{{ child.name }}</div>
-          <div class="child-card__meta">⭐ {{ child.balance }} · {{ child.age_group === 'junior' ? '7-10 лет' : '11-14 лет' }}</div>
+          <div class="child-card__meta">
+            ⭐ {{ child.balance }}
+            <span v-if="ageLabel(child.birthday)" class="age-badge">{{ ageLabel(child.birthday) }}</span>
+            <span v-else class="age-badge age-badge--unknown">возраст не указан</span>
+          </div>
         </div>
         <button class="icon-btn" @click="removeChild(child)" title="Удалить">⋮</button>
       </div>
@@ -51,6 +55,7 @@
 <script>
 import ParentLayout from '../../components/ParentLayout.vue'
 import { useApi } from '../../composables/useApi'
+import { ageLabel, calcAge } from '../../composables/useAge'
 export default {
   name: 'ParentChildren',
   components: { ParentLayout },
@@ -64,6 +69,13 @@ export default {
     await this.load()
   },
   methods: {
+    ageLabel,
+    avatarClass(child) {
+      const age = calcAge(child.birthday)
+      if (age === null) return 'avatar--default'
+      if (age < 11) return 'avatar--junior'
+      return 'avatar--senior'
+    },
     async load() {
       const { getChildren } = useApi()
       this.loading = true
@@ -106,10 +118,15 @@ export default {
 .page-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
 .loading { text-align: center; padding: 60px; color: #888; }
 .child-card { background: #fff; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.child-card__avatar { width: 44px; height: 44px; border-radius: 50%; background: #4f7ef7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; }
+.child-card__avatar { width: 44px; height: 44px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+.avatar--junior { background: #f97316; }
+.avatar--senior { background: #4f7ef7; }
+.avatar--default { background: #9ca3af; }
 .child-card__info { flex: 1; }
 .child-card__name { font-size: 16px; font-weight: 700; }
-.child-card__meta { font-size: 13px; color: #888; margin-top: 2px; }
+.child-card__meta { font-size: 13px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+.age-badge { background: #f0f4ff; color: #4f7ef7; border-radius: 8px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.age-badge--unknown { background: #f5f5f5; color: #aaa; }
 .icon-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: #f5f5f5; font-size: 18px; cursor: pointer; color: #666; }
 .add-btn { width: 100%; padding: 14px; background: #f0f4ff; border: 2px dashed #4f7ef7; border-radius: 16px; color: #4f7ef7; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
 .add-btn:hover { background: #e8eeff; }
@@ -121,7 +138,7 @@ export default {
 .avatar-hint { font-size: 12px; color: #4f7ef7; cursor: pointer; }
 .field { margin-bottom: 12px; }
 .field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
-.field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; }
+.field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; }
 .field input:focus { border-color: #4f7ef7; }
 .error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 10px; }
 .btn-primary { width: 100%; padding: 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }

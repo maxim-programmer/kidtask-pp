@@ -93,6 +93,7 @@
             <tr>
               <th>Имя</th>
               <th>Никнейм</th>
+              <th>Возраст</th>
               <th>Родитель</th>
               <th>Баланс</th>
               <th>Статус</th>
@@ -103,6 +104,7 @@
             <tr v-for="c in children" :key="c.child_id">
               <td>{{ c.name }}</td>
               <td>@{{ c.username }}</td>
+              <td><span v-if="ageLabel(c.birthday)" class="age-tag">{{ ageLabel(c.birthday) }}</span><span v-else class="age-tag age-tag--unknown">—</span></td>
               <td>{{ c.parent_name }}</td>
               <td>⭐ {{ c.balance }}</td>
               <td><span class="badge" :class="c.is_blocked ? 'badge--blocked' : 'badge--active'">{{ c.is_blocked ? 'Заблокирован' : 'Активен' }}</span></td>
@@ -258,6 +260,7 @@
 
 <script>
 import { useAdminApi } from '../../composables/useApi'
+import { ageLabel, calcAge } from '../../composables/useAge'
 
 export default {
   name: 'AdminDashboard',
@@ -459,6 +462,8 @@ export default {
       this.$router.push('/admin/login')
     },
 
+    ageLabel,
+    calcAge,
     formatDate(d) {
       return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     },
@@ -570,4 +575,6 @@ export default {
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .pos { color: #155724; font-weight: 700; }
 .neg { color: #c53030; font-weight: 700; }
+.age-tag { background: #e8eeff; color: #4f7ef7; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.age-tag--unknown { background: #f5f5f5; color: #bbb; }
 </style>

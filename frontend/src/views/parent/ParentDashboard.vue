@@ -22,7 +22,7 @@
           <div class="balance-card">
             <div>
               <div class="balance-label">Баланс</div>
-              <div class="balance-meta">{{ selectedChild.age_group === 'junior' ? '7–10 лет' : '11–14 лет' }}</div>
+              <div class="balance-meta" v-if="ageLabel(selectedChild.birthday)">{{ ageLabel(selectedChild.birthday) }}</div>
             </div>
             <div class="balance-value">⭐ {{ selectedChild.balance }}</div>
           </div>
@@ -239,6 +239,7 @@
 import ParentLayout from '../../components/ParentLayout.vue'
 import { useApi } from '../../composables/useApi'
 import { useAuth } from '../../composables/useAuth'
+import { ageLabel, calcAge } from '../../composables/useAge'
 export default {
   name: 'ParentDashboard',
   components: { ParentLayout },
@@ -330,6 +331,8 @@ export default {
       if (w.status === 'purchased' || w.status === 'delivered') return 100
       return Math.min(100, Math.round((this.selectedChild.balance / w.price) * 100))
     },
+    ageLabel,
+    calcAge,
     statusLabel(s) {
       return { active: 'Активное', pending_review: 'На проверке', needs_rework: 'На доработке', completed: 'Выполнено' }[s] || s
     },

@@ -30,13 +30,14 @@ type FamilyStat struct {
 }
 
 type ChildRow struct {
-	ChildID    string `json:"child_id"`
-	ParentID   string `json:"parent_id"`
-	Name       string `json:"name"`
-	Username   string `json:"username"`
-	Balance    int    `json:"balance"`
-	IsBlocked  bool   `json:"is_blocked"`
-	ParentName string `json:"parent_name"`
+	ChildID    string     `json:"child_id"`
+	ParentID   string     `json:"parent_id"`
+	Name       string     `json:"name"`
+	Username   string     `json:"username"`
+	Balance    int        `json:"balance"`
+	IsBlocked  bool       `json:"is_blocked"`
+	ParentName string     `json:"parent_name"`
+	Birthday   *time.Time `json:"birthday,omitempty"`
 }
 
 type BalanceLog struct {
@@ -144,7 +145,7 @@ func (s *Storage) DeleteParent(ctx context.Context, parentID string) error {
 
 func (s *Storage) ListChildren(ctx context.Context) ([]*ChildRow, error) {
 	rows, err := s.db.Query(ctx, `
-		SELECT c.child_id, c.parent_id, c.name, c.username, c.balance, c.is_blocked, p.name
+		SELECT c.child_id, c.parent_id, c.name, c.username, c.balance, c.is_blocked, p.name, c.birthday
 		FROM children c JOIN parents p ON p.parent_id = c.parent_id
 		ORDER BY p.name, c.name
 	`)
@@ -155,7 +156,7 @@ func (s *Storage) ListChildren(ctx context.Context) ([]*ChildRow, error) {
 	var list []*ChildRow
 	for rows.Next() {
 		c := &ChildRow{}
-		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Name, &c.Username, &c.Balance, &c.IsBlocked, &c.ParentName); err != nil {
+		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Name, &c.Username, &c.Balance, &c.IsBlocked, &c.ParentName, &c.Birthday); err != nil {
 			return nil, err
 		}
 		list = append(list, c)
