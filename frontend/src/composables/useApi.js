@@ -52,6 +52,8 @@ export function useApi() {
   const purchaseWish = (childId, id) => api.post(`/children/${childId}/wishes/${id}/purchase`)
   const deliverWish = (childId, id) => api.patch(`/children/${childId}/wishes/${id}/deliver`)
 
+  const getMyBalanceLogs = () => api.get('/me/balance-logs')
+
   const getStats = () => api.get('/stats')
 
   const getSupportChat = (parentId) => api.get('/support/chat', { params: { parent_id: parentId } })
@@ -63,6 +65,7 @@ export function useApi() {
     getChildren, createChild, updateChild, deleteChild,
     getTasks, createTask, updateTask, deleteTask, submitTask, approveTask, rejectTask,
     getWishes, createWish, updateWish, deleteWish, purchaseWish, deliverWish,
+    getMyBalanceLogs,
     getStats,
     getSupportChat, sendSupportMessage, createComplaint,
   }
@@ -91,6 +94,7 @@ export function useAdminApi() {
   const getWishes = (sort) => adminApi.get('/wishes', { params: { sort } })
 
   return {
+    getMyBalanceLogs,
     getStats, getFamilies, blockFamily, unblockFamily, deleteFamily,
     getChildren, blockChild, unblockChild, adjustBalance, getBalanceLogs,
     getComplaints, resolveComplaint,

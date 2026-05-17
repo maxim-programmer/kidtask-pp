@@ -6,6 +6,7 @@
         <button :class="['tab', { 'tab--active': view === 'progress' }]" @click="view = 'progress'">Прогресс</button>
         <button :class="['tab', { 'tab--active': view === 'tasks' }]" @click="view = 'tasks'">Задания</button>
         <button :class="['tab', { 'tab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
+        <button :class="['tab', { 'tab--active': view === 'history' }]" @click="loadHistory">История</button>
       </div>
 
       <div v-if="view === 'progress'">
@@ -107,6 +108,19 @@
         </div>
         <button class="add-btn" @click="showModal = true">+ Добавить цель</button>
       </div>
+      <div v-if="view === 'history'">
+        <div v-if="historyLoading" class="loading">Загрузка...</div>
+        <div v-else-if="balanceLogs.length === 0" class="empty">История пуста</div>
+        <div v-for="log in balanceLogs" :key="log.log_id" :class="['log-item', log.delta > 0 ? 'log-item--plus' : 'log-item--minus']">
+          <div class="log-icon">{{ log.delta > 0 ? '⭐' : '🛒' }}</div>
+          <div class="log-info">
+            <div class="log-reason">{{ log.reason }}</div>
+            <div class="log-date">{{ formatDate(log.created_at) }}</div>
+          </div>
+          <div class="log-delta">{{ log.delta > 0 ? '+' : '' }}{{ log.delta }} ⭐</div>
+        </div>
+      </div>
+
     </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -151,6 +165,7 @@ export default {
       submitting: null, buying: null,
       showModal: false, saving: false, wishError: '',
       form: { title: '', description: '' },
+      balanceLogs: [], historyLoading: false,
     }
   },
   computed: {
@@ -210,6 +225,19 @@ export default {
       try { await purchaseWish(this.childId, wish.wish_id); await this.load() }
       catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') }
       finally { this.buying = null }
+    },
+    async loadHistory() {
+      this.view = 'history'
+      if (this.balanceLogs.length) return
+      this.historyLoading = true
+      const { getMyBalanceLogs } = useApi()
+      try {
+        const res = await getMyBalanceLogs()
+        this.balanceLogs = res.data.logs || []
+      } finally { this.historyLoading = false }
+    },
+    formatDate(d) {
+      return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     },
     async addWish() {
       this.saving = true; this.wishError = ''
@@ -302,4 +330,14 @@ export default {
 .btn-primary { width: 100%; padding: 14px; background: #ea580c; color: #fff; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; font-family: inherit; }
 .btn-primary:hover:not(:disabled) { background: #c2410c; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.log-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(234,88,12,0.07); }
+.log-item--plus { border-left: 4px solid #22c55e; }
+.log-item--minus { border-left: 4px solid #ea580c; }
+.log-icon { font-size: 24px; flex-shrink: 0; }
+.log-info { flex: 1; }
+.log-reason { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.log-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+.log-delta { font-size: 18px; font-weight: 800; flex-shrink: 0; }
+.log-item--plus .log-delta { color: #22c55e; }
+.log-item--minus .log-delta { color: #ea580c; }
 </style>

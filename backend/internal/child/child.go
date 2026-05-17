@@ -170,6 +170,34 @@ func (s *Storage) GetProgress(ctx context.Context, childID string) (*Progress, e
 	return p, nil
 }
 
+type BalanceLog struct {
+	LogID     string    `json:"log_id"`
+	ChildID   string    `json:"child_id"`
+	Delta     int       `json:"delta"`
+	Reason    string    `json:"reason"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (s *Storage) GetBalanceLogs(ctx context.Context, childID string) ([]*BalanceLog, error) {
+	rows, err := s.db.Query(ctx,
+		`SELECT log_id, child_id, delta, reason, created_at FROM balance_logs WHERE child_id=$1 ORDER BY created_at DESC LIMIT 100`,
+		childID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []*BalanceLog
+	for rows.Next() {
+		l := &BalanceLog{}
+		if err := rows.Scan(&l.LogID, &l.ChildID, &l.Delta, &l.Reason, &l.CreatedAt); err != nil {
+			return nil, err
+		}
+		list = append(list, l)
+	}
+	return list, nil
+}
+
 type Handler struct {
 	storage   *Storage
 	jwtSecret string
@@ -193,6 +221,8 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 		middleware.RequireRole("parent", h.Update)))).Methods(http.MethodPatch)
 	r.Handle("/api/children/{id}", h.mw(http.HandlerFunc(
 		middleware.RequireRole("parent", h.Delete)))).Methods(http.MethodDelete)
+	r.Handle("/api/me/balance-logs", h.mw(http.HandlerFunc(
+		middleware.RequireRole("child", h.GetBalanceLogs)))).Methods(http.MethodGet)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -410,4 +440,16 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond.JSON(w, http.StatusOK, map[string]any{"message": "child deleted"})
+}
+func (h *Handler) GetBalanceLogs(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r)
+	logs, err := h.storage.GetBalanceLogs(r.Context(), claims.UserID)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
+		return
+	}
+	if logs == nil {
+		logs = []*BalanceLog{}
+	}
+	respond.JSON(w, http.StatusOK, map[string]any{"logs": logs})
 }
