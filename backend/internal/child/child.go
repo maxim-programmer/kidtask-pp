@@ -26,6 +26,7 @@ type Child struct {
 	Balance      int        `json:"balance"`
 	AgeGroup     string     `json:"age_group"`
 	Birthday     *time.Time `json:"birthday,omitempty"`
+	AvatarURL    *string    `json:"avatar_url,omitempty"`
 }
 
 type Progress struct {
@@ -75,9 +76,9 @@ func (s *Storage) Create(ctx context.Context, c *Child) error {
 func (s *Storage) GetByID(ctx context.Context, id string) (*Child, error) {
 	c := &Child{}
 	err := s.db.QueryRow(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url
 		 FROM children WHERE child_id = $1`, id,
-	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday)
+	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -87,9 +88,9 @@ func (s *Storage) GetByID(ctx context.Context, id string) (*Child, error) {
 func (s *Storage) GetByUsername(ctx context.Context, username string) (*Child, error) {
 	c := &Child{}
 	err := s.db.QueryRow(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url
 		 FROM children WHERE username = $1`, username,
-	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday)
+	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -98,7 +99,7 @@ func (s *Storage) GetByUsername(ctx context.Context, username string) (*Child, e
 
 func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, error) {
 	rows, err := s.db.Query(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url
 		 FROM children WHERE parent_id = $1`, parentID,
 	)
 	if err != nil {
@@ -109,7 +110,7 @@ func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, 
 	var children []*Child
 	for rows.Next() {
 		c := &Child{}
-		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday); err != nil {
+		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL); err != nil {
 			return nil, err
 		}
 		children = append(children, c)
@@ -198,6 +199,14 @@ func (s *Storage) GetBalanceLogs(ctx context.Context, childID string) ([]*Balanc
 	return list, nil
 }
 
+func (s *Storage) SetAvatar(ctx context.Context, childID string, avatarURL string) error {
+	_, err := s.db.Exec(ctx,
+		`UPDATE children SET avatar_url=$1 WHERE child_id=$2`,
+		avatarURL, childID,
+	)
+	return err
+}
+
 type Handler struct {
 	storage   *Storage
 	jwtSecret string
@@ -225,6 +234,8 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 		middleware.RequireRole("child", h.GetBalanceLogs)))).Methods(http.MethodGet)
 	r.Handle("/api/children/{id}/balance-logs", h.mw(http.HandlerFunc(
 		middleware.RequireRole("parent", h.GetChildBalanceLogs)))).Methods(http.MethodGet)
+	r.Handle("/api/children/{id}/avatar", h.mw(http.HandlerFunc(
+		middleware.RequireRole("parent", h.SetAvatar)))).Methods(http.MethodPost)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -477,4 +488,30 @@ func (h *Handler) GetChildBalanceLogs(w http.ResponseWriter, r *http.Request) {
 		logs = []*BalanceLog{}
 	}
 	respond.JSON(w, http.StatusOK, map[string]any{"logs": logs})
+}
+
+func (h *Handler) SetAvatar(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r)
+	childID := mux.Vars(r)["id"]
+	child, err := h.storage.GetByID(r.Context(), childID)
+	if err != nil || child == nil {
+		respond.Error(w, http.StatusNotFound, "NOT_FOUND", "child not found")
+		return
+	}
+	if child.ParentID != claims.UserID {
+		respond.Error(w, http.StatusForbidden, "FORBIDDEN", "forbidden")
+		return
+	}
+	var req struct {
+		AvatarURL string `json:"avatar_url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.AvatarURL == "" {
+		respond.Error(w, http.StatusBadRequest, "BAD_REQUEST", "invalid body")
+		return
+	}
+	if err := h.storage.SetAvatar(r.Context(), childID, req.AvatarURL); err != nil {
+		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
+		return
+	}
+	respond.JSON(w, http.StatusOK, map[string]any{"avatar_url": req.AvatarURL})
 }

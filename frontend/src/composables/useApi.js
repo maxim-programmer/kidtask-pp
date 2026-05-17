@@ -54,6 +54,7 @@ export function useApi() {
 
   const getMyBalanceLogs = () => api.get('/me/balance-logs')
   const getChildBalanceLogs = (childId) => api.get(`/children/${childId}/balance-logs`)
+  const setChildAvatar = (childId, avatarUrl) => api.post(`/children/${childId}/avatar`, { avatar_url: avatarUrl })
 
   const getStats = () => api.get('/stats')
 
@@ -68,6 +69,7 @@ export function useApi() {
     getWishes, createWish, updateWish, deleteWish, purchaseWish, deliverWish,
     getMyBalanceLogs,
     getChildBalanceLogs,
+    setChildAvatar,
     getStats,
     getSupportChat, sendSupportMessage, createComplaint,
   }
@@ -98,6 +100,7 @@ export function useAdminApi() {
   return {
     getMyBalanceLogs,
     getChildBalanceLogs,
+    setChildAvatar,
     getStats, getFamilies, blockFamily, unblockFamily, deleteFamily,
     getChildren, blockChild, unblockChild, adjustBalance, getBalanceLogs,
     getComplaints, resolveComplaint,

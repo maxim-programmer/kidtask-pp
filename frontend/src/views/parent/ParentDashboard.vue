@@ -15,11 +15,15 @@
             v-for="c in children" :key="c.child_id"
             :class="['tab', { 'tab--active': selectedChild?.child_id === c.child_id }]"
             @click="selectChild(c)"
-          >{{ c.name }}</button>
+          >
+            <span v-if="c.avatar_url" class="tab-avatar-wrap"><img :src="c.avatar_url" class="tab-avatar" /></span>
+            {{ c.name }}
+          </button>
         </div>
 
         <div v-if="selectedChild">
           <div class="balance-card">
+            <div class="balance-avatar" v-if="selectedChild"><img v-if="selectedChild.avatar_url" :src="selectedChild.avatar_url" class="balance-avatar-img" /><span v-else class="balance-avatar-letter">{{ selectedChild.name[0] }}</span></div>
             <div>
               <div class="balance-label">Баланс</div>
               <div class="balance-meta" v-if="ageLabel(selectedChild.birthday)">{{ ageLabel(selectedChild.birthday) }}</div>
@@ -555,4 +559,9 @@ export default {
 .log-delta { font-size: 16px; font-weight: 800; flex-shrink: 0; }
 .log-item--plus .log-delta { color: #22c55e; }
 .log-item--minus .log-delta { color: #4f7ef7; }
+.tab-avatar-wrap { display: inline-block; width: 20px; height: 20px; border-radius: 50%; overflow: hidden; vertical-align: middle; margin-right: 5px; flex-shrink: 0; }
+.tab-avatar { width: 100%; height: 100%; object-fit: cover; }
+.balance-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #4f7ef7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.balance-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.balance-avatar-letter { font-size: 20px; font-weight: 700; color: #fff; }
 </style>
