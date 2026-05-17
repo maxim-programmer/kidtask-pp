@@ -56,6 +56,7 @@
             <button :class="['vtab', { 'vtab--active': view === 'overview' }]" @click="view = 'overview'">Обзор</button>
             <button :class="['vtab', { 'vtab--active': view === 'tasks' }]" @click="view = 'tasks'">Задания</button>
             <button :class="['vtab', { 'vtab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
+            <button :class="['vtab', { 'vtab--active': view === 'history' }]" @click="loadHistory">История</button>
           </div>
 
           <div v-if="view === 'overview'">
@@ -171,6 +172,19 @@
               </div>
             </div>
           </div>
+          <div v-if="view === 'history'">
+            <div v-if="historyLoading" class="loading">Загрузка...</div>
+            <div v-else-if="balanceLogs.length === 0" class="empty">История пуста</div>
+            <div v-for="log in balanceLogs" :key="log.log_id" :class="['log-item', log.delta > 0 ? 'log-item--plus' : 'log-item--minus']">
+              <div class="log-icon">{{ log.delta > 0 ? '⭐' : '🛒' }}</div>
+              <div class="log-info">
+                <div class="log-reason">{{ log.reason }}</div>
+                <div class="log-date">{{ formatDate(log.created_at) }}</div>
+              </div>
+              <div class="log-delta">{{ log.delta > 0 ? '+' : '' }}{{ log.delta }} ⭐</div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -270,6 +284,7 @@ export default {
       addForm: { title: '', reward: '', description: '' },
       editModal: false, editTarget: null, editForm: { title: '', reward: '', description: '' },
       delivering: null,
+      balanceLogs: [], historyLoading: false,
     }
   },
   computed: {
@@ -302,8 +317,23 @@ export default {
     } finally { this.loading = false }
   },
   methods: {
+    async loadHistory() {
+      this.view = 'history'
+      this.balanceLogs = []
+      this.historyLoading = true
+      const { getChildBalanceLogs } = useApi()
+      try {
+        const res = await getChildBalanceLogs(this.selectedChild.child_id)
+        this.balanceLogs = res.data.logs || []
+      } finally { this.historyLoading = false }
+    },
+    formatDate(d) {
+      return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    },
     async selectChild(child) {
       this.selectedChild = child
+      this.balanceLogs = []
+      if (this.view === 'history') this.view = 'overview'
       const { getWishes, getTasks } = useApi()
       const [w, t] = await Promise.all([
         getWishes(child.child_id),
@@ -515,4 +545,14 @@ export default {
 .field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; }
 .field input:focus { border-color: #4f7ef7; }
 .error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 10px; }
+.log-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.log-item--plus { border-left: 4px solid #22c55e; }
+.log-item--minus { border-left: 4px solid #4f7ef7; }
+.log-icon { font-size: 22px; flex-shrink: 0; }
+.log-info { flex: 1; min-width: 0; }
+.log-reason { font-size: 14px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+.log-delta { font-size: 16px; font-weight: 800; flex-shrink: 0; }
+.log-item--plus .log-delta { color: #22c55e; }
+.log-item--minus .log-delta { color: #4f7ef7; }
 </style>

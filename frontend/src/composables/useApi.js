@@ -53,6 +53,7 @@ export function useApi() {
   const deliverWish = (childId, id) => api.patch(`/children/${childId}/wishes/${id}/deliver`)
 
   const getMyBalanceLogs = () => api.get('/me/balance-logs')
+  const getChildBalanceLogs = (childId) => api.get(`/children/${childId}/balance-logs`)
 
   const getStats = () => api.get('/stats')
 
@@ -66,6 +67,7 @@ export function useApi() {
     getTasks, createTask, updateTask, deleteTask, submitTask, approveTask, rejectTask,
     getWishes, createWish, updateWish, deleteWish, purchaseWish, deliverWish,
     getMyBalanceLogs,
+    getChildBalanceLogs,
     getStats,
     getSupportChat, sendSupportMessage, createComplaint,
   }
@@ -95,6 +97,7 @@ export function useAdminApi() {
 
   return {
     getMyBalanceLogs,
+    getChildBalanceLogs,
     getStats, getFamilies, blockFamily, unblockFamily, deleteFamily,
     getChildren, blockChild, unblockChild, adjustBalance, getBalanceLogs,
     getComplaints, resolveComplaint,

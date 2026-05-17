@@ -223,6 +223,8 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 		middleware.RequireRole("parent", h.Delete)))).Methods(http.MethodDelete)
 	r.Handle("/api/me/balance-logs", h.mw(http.HandlerFunc(
 		middleware.RequireRole("child", h.GetBalanceLogs)))).Methods(http.MethodGet)
+	r.Handle("/api/children/{id}/balance-logs", h.mw(http.HandlerFunc(
+		middleware.RequireRole("parent", h.GetChildBalanceLogs)))).Methods(http.MethodGet)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -444,6 +446,29 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetBalanceLogs(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetClaims(r)
 	logs, err := h.storage.GetBalanceLogs(r.Context(), claims.UserID)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
+		return
+	}
+	if logs == nil {
+		logs = []*BalanceLog{}
+	}
+	respond.JSON(w, http.StatusOK, map[string]any{"logs": logs})
+}
+
+func (h *Handler) GetChildBalanceLogs(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r)
+	childID := mux.Vars(r)["id"]
+	child, err := h.storage.GetByID(r.Context(), childID)
+	if err != nil || child == nil {
+		respond.Error(w, http.StatusNotFound, "NOT_FOUND", "child not found")
+		return
+	}
+	if child.ParentID != claims.UserID {
+		respond.Error(w, http.StatusForbidden, "FORBIDDEN", "forbidden")
+		return
+	}
+	logs, err := h.storage.GetBalanceLogs(r.Context(), childID)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
 		return
