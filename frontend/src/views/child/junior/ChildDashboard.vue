@@ -8,7 +8,6 @@
         <button :class="['tab', { 'tab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
       </div>
 
-      <!-- ПРОГРЕСС -->
       <div v-if="view === 'progress'">
         <div class="balance-card">
           <div class="balance-label">Мой баланс</div>
@@ -40,7 +39,6 @@
         </div>
       </div>
 
-      <!-- ЗАДАНИЯ -->
       <div v-if="view === 'tasks'">
         <div class="filter-bar">
           <button v-for="f in taskFilters" :key="f.value"
@@ -55,7 +53,6 @@
               <div class="task-card__desc" v-if="t.description">{{ t.description }}</div>
               <div class="task-card__rework" v-if="t.rejection_comment">💬 {{ t.rejection_comment }}</div>
             </div>
-            <button class="audio-btn" @click="speak(t.title)">🔊</button>
           </div>
           <div class="task-card__footer">
             <span class="reward">⭐ {{ t.reward }}</span>
@@ -72,7 +69,6 @@
         </div>
       </div>
 
-      <!-- ВИШЛИСТ -->
       <div v-if="view === 'wishlist'">
         <div v-if="wishes.length === 0" class="empty">Добавь свою первую цель! 🎯</div>
         <div v-for="w in wishes" :key="w.wish_id" class="wish-card">
@@ -94,7 +90,7 @@
             </div>
           </div>
           <div v-if="w.price" class="progress-bar">
-            <div class="progress-fill" :style="{ width: Math.min(100, ((user?.balance || 0) / w.price) * 100) + '%' }"></div>
+            <div class="progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
           </div>
           <div class="wish-actions">
             <button
@@ -196,6 +192,11 @@ export default {
         this.user = authUser
       } finally { this.loading = false }
     },
+    wishProgress(w) {
+      if (!w.price) return 0
+      if (w.status === 'purchased' || w.status === 'delivered') return 100
+      return Math.min(100, Math.round(((this.user?.balance || 0) / w.price) * 100))
+    },
     async submit(task) {
       this.submitting = task.task_id
       const { submitTask } = useApi()
@@ -220,12 +221,6 @@ export default {
         await this.load()
       } catch (e) { this.wishError = e.response?.data?.error?.message || 'Ошибка' }
       finally { this.saving = false }
-    },
-    speak(text) {
-      if (!window.speechSynthesis) return
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = 'ru-RU'
-      window.speechSynthesis.speak(u)
     }
   }
 }
@@ -264,7 +259,6 @@ export default {
 .task-card__title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
 .task-card__desc { font-size: 14px; color: #888; }
 .task-card__rework { font-size: 13px; color: #e53e3e; margin-top: 6px; background: #fff5f5; border-radius: 8px; padding: 6px 10px; }
-.audio-btn { background: #fff5eb; border: none; border-radius: 10px; width: 36px; height: 36px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
 .task-card__footer { display: flex; align-items: center; justify-content: space-between; }
 .reward { font-size: 20px; font-weight: 800; color: #ea580c; }
 .done-btn { padding: 10px 20px; background: #22c55e; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }

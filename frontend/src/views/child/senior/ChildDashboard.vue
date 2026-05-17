@@ -1,4 +1,3 @@
-
 <template>
   <SeniorLayout>
     <div v-if="loading" class="loading">Загрузка...</div>
@@ -54,7 +53,6 @@
               <span class="task-desc" v-if="t.description">{{ t.description }}</span>
               <span class="task-rework" v-if="t.rejection_comment">💬 {{ t.rejection_comment }}</span>
             </div>
-            <button class="audio-btn" @click="speak(t.title)">🔊</button>
           </div>
           <div class="task-card__footer">
             <span class="reward">⭐ {{ t.reward }}</span>
@@ -230,12 +228,6 @@ export default {
         await this.load()
       } catch (e) { this.wishError = e.response?.data?.error?.message || 'Ошибка' }
       finally { this.saving = false }
-    },
-    speak(text) {
-      if (!window.speechSynthesis) return
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = 'ru-RU'
-      window.speechSynthesis.speak(u)
     }
   }
 }
@@ -275,7 +267,6 @@ export default {
 .task-title { font-size: 15px; font-weight: 700; color: #f3f4f6; }
 .task-desc { font-size: 13px; color: #6b7280; }
 .task-rework { font-size: 12px; color: #f87171; }
-.audio-btn { background: #374151; border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 15px; cursor: pointer; flex-shrink: 0; margin-left: 8px; }
 .task-card__footer { display: flex; align-items: center; justify-content: space-between; }
 .reward { font-size: 16px; font-weight: 700; color: #a5b4fc; }
 .done-btn { padding: 8px 18px; background: #22c55e; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
