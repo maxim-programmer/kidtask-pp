@@ -7,6 +7,7 @@
         <button :class="['tab', { 'tab--active': view === 'tasks' }]" @click="view = 'tasks'">Задания</button>
         <button :class="['tab', { 'tab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
         <button :class="['tab', { 'tab--active': view === 'history' }]" @click="loadHistory">История</button>
+        <button :class="['tab', { 'tab--active': view === 'chat' }]" @click="loadChat">Чат</button>
       </div>
 
       <div v-if="view === 'progress'">
@@ -123,6 +124,24 @@
         </div>
       </div>
 
+      <div v-if="view === 'chat'" class="chat-wrap">
+        <div class="chat-messages" ref="chatMessages">
+          <div v-if="chatLoading" class="chat-empty">Загрузка...</div>
+          <div v-else-if="chatMessages.length === 0" class="chat-empty">Напиши что-нибудь родителю 💬</div>
+          <div v-for="m in chatMessages" :key="m.message_id"
+            :class="['chat-bubble', m.from_child ? 'chat-bubble--me' : 'chat-bubble--parent']">
+            <div class="chat-bubble__name">{{ m.from_child ? 'Я' : 'Родитель' }}</div>
+            <div class="chat-bubble__body">{{ m.body }}</div>
+            <div class="chat-bubble__time">{{ formatDate(m.created_at) }}</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input v-model="chatInput" type="text" placeholder="Написать сообщение..."
+            class="chat-input" @keyup.enter="sendChat" />
+          <button class="chat-send-btn" @click="sendChat" :disabled="!chatInput.trim()">➤</button>
+        </div>
+      </div>
+
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal">
         <h3>Новая цель</h3>
@@ -167,6 +186,7 @@ export default {
       showModal: false, saving: false, wishError: '',
       form: { title: '', description: '' },
       balanceLogs: [], historyLoading: false,
+      chatMessages: [], chatLoading: false, chatInput: '',
     }
   },
   computed: {
@@ -245,6 +265,28 @@ export default {
     },
     formatDate(d) {
       return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    },
+    async loadChat() {
+      this.view = 'chat'
+      this.chatLoading = true
+      const { getMyChat } = useApi()
+      try {
+        const res = await getMyChat()
+        this.chatMessages = res.data.messages || []
+        this.$nextTick(() => this.scrollChat())
+      } finally { this.chatLoading = false }
+    },
+    async sendChat() {
+      if (!this.chatInput.trim()) return
+      const { sendMyChat } = useApi()
+      const res = await sendMyChat(this.chatInput.trim())
+      this.chatMessages.push(res.data.message)
+      this.chatInput = ''
+      this.$nextTick(() => this.scrollChat())
+    },
+    scrollChat() {
+      const el = this.$refs.chatMessages
+      if (el) el.scrollTop = el.scrollHeight
     },
     async addWish() {
       this.saving = true; this.wishError = ''
@@ -353,4 +395,20 @@ export default {
 .log-delta { font-size: 17px; font-weight: 800; flex-shrink: 0; }
 .log-item--plus .log-delta { color: #4ade80; }
 .log-item--minus .log-delta { color: #a5b4fc; }
+.chat-wrap { display: flex; flex-direction: column; height: 460px; background: #1f2937; border-radius: 14px; border: 1px solid #374151; overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-empty { text-align: center; color: #6b7280; font-size: 14px; margin: auto; }
+.chat-bubble { max-width: 75%; display: flex; flex-direction: column; gap: 2px; }
+.chat-bubble--me { align-self: flex-end; align-items: flex-end; }
+.chat-bubble--parent { align-self: flex-start; align-items: flex-start; }
+.chat-bubble__name { font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 2px; }
+.chat-bubble__body { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+.chat-bubble--me .chat-bubble__body { background: #6366f1; color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble--parent .chat-bubble__body { background: #374151; color: #f3f4f6; border-bottom-left-radius: 4px; }
+.chat-bubble__time { font-size: 10px; color: #6b7280; margin-top: 2px; }
+.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #374151; background: #1f2937; }
+.chat-input { flex: 1; padding: 10px 14px; background: #111827; border: 1px solid #374151; border-radius: 24px; font-size: 14px; color: #e5e7eb; outline: none; font-family: inherit; }
+.chat-input:focus { border-color: #6366f1; }
+.chat-send-btn { width: 40px; height: 40px; border-radius: 50%; background: #6366f1; color: #fff; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.chat-send-btn:disabled { background: #374151; cursor: not-allowed; }
 </style>

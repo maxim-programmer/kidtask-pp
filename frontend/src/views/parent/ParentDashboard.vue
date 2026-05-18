@@ -61,6 +61,7 @@
             <button :class="['vtab', { 'vtab--active': view === 'tasks' }]" @click="view = 'tasks'">Задания</button>
             <button :class="['vtab', { 'vtab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
             <button :class="['vtab', { 'vtab--active': view === 'history' }]" @click="loadHistory">История</button>
+            <button :class="['vtab', { 'vtab--active': view === 'chat' }]" @click="loadChat">Чат</button>
           </div>
 
           <div v-if="view === 'overview'">
@@ -176,6 +177,24 @@
               </div>
             </div>
           </div>
+          <div v-if="view === 'chat'" class="chat-wrap">
+            <div class="chat-messages" ref="chatMessages">
+              <div v-if="chatLoading" class="chat-empty">Загрузка...</div>
+              <div v-else-if="chatMessages.length === 0" class="chat-empty">Начните общение с ребёнком 💬</div>
+              <div v-for="m in chatMessages" :key="m.message_id"
+                :class="['chat-bubble', m.from_child ? 'chat-bubble--child' : 'chat-bubble--parent']">
+                <div class="chat-bubble__name">{{ m.from_child ? selectedChild.name : 'Вы' }}</div>
+                <div class="chat-bubble__body">{{ m.body }}</div>
+                <div class="chat-bubble__time">{{ formatDate(m.created_at) }}</div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input v-model="chatInput" type="text" placeholder="Написать сообщение..." class="chat-input"
+                @keyup.enter="sendChat" />
+              <button class="chat-send-btn" @click="sendChat" :disabled="!chatInput.trim()">➤</button>
+            </div>
+          </div>
+
           <div v-if="view === 'history'">
             <div v-if="historyLoading" class="loading">Загрузка...</div>
             <div v-else-if="balanceLogs.length === 0" class="empty">История пуста</div>
@@ -289,6 +308,7 @@ export default {
       editModal: false, editTarget: null, editForm: { title: '', reward: '', description: '' },
       delivering: null,
       balanceLogs: [], historyLoading: false,
+      chatMessages: [], chatLoading: false, chatInput: '',
     }
   },
   computed: {
@@ -321,6 +341,28 @@ export default {
     } finally { this.loading = false }
   },
   methods: {
+    async loadChat() {
+      this.view = 'chat'
+      this.chatLoading = true
+      const { getFamilyChat } = useApi()
+      try {
+        const res = await getFamilyChat(this.selectedChild.child_id)
+        this.chatMessages = res.data.messages || []
+        this.$nextTick(() => this.scrollChat())
+      } finally { this.chatLoading = false }
+    },
+    async sendChat() {
+      if (!this.chatInput.trim()) return
+      const { sendFamilyChat } = useApi()
+      const res = await sendFamilyChat(this.selectedChild.child_id, this.chatInput.trim())
+      this.chatMessages.push(res.data.message)
+      this.chatInput = ''
+      this.$nextTick(() => this.scrollChat())
+    },
+    scrollChat() {
+      const el = this.$refs.chatMessages
+      if (el) el.scrollTop = el.scrollHeight
+    },
     async loadHistory() {
       this.view = 'history'
       this.balanceLogs = []
@@ -337,7 +379,8 @@ export default {
     async selectChild(child) {
       this.selectedChild = child
       this.balanceLogs = []
-      if (this.view === 'history') this.view = 'overview'
+      this.chatMessages = []
+      if (this.view === 'history' || this.view === 'chat') this.view = 'overview'
       const { getWishes, getTasks } = useApi()
       const [w, t] = await Promise.all([
         getWishes(child.child_id),
@@ -564,4 +607,20 @@ export default {
 .balance-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #4f7ef7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .balance-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .balance-avatar-letter { font-size: 20px; font-weight: 700; color: #fff; }
+.chat-wrap { display: flex; flex-direction: column; height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-empty { text-align: center; color: #bbb; font-size: 14px; margin: auto; }
+.chat-bubble { max-width: 70%; display: flex; flex-direction: column; gap: 2px; }
+.chat-bubble--parent { align-self: flex-end; align-items: flex-end; }
+.chat-bubble--child { align-self: flex-start; align-items: flex-start; }
+.chat-bubble__name { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 2px; }
+.chat-bubble__body { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+.chat-bubble--parent .chat-bubble__body { background: #4f7ef7; color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble--child .chat-bubble__body { background: #f0f4ff; color: #1a1a1a; border-bottom-left-radius: 4px; }
+.chat-bubble__time { font-size: 10px; color: #bbb; margin-top: 2px; }
+.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #f0f0f0; background: #fff; }
+.chat-input { flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; font-family: inherit; }
+.chat-input:focus { border-color: #4f7ef7; }
+.chat-send-btn { width: 40px; height: 40px; border-radius: 50%; background: #4f7ef7; color: #fff; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
 </style>

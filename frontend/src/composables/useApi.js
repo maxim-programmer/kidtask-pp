@@ -12,7 +12,9 @@ api.interceptors.response.use(
   r => r,
   err => {
     if (err.response?.status === 401) {
+      const adminSecret = localStorage.getItem('kt_admin_secret')
       localStorage.clear()
+      if (adminSecret) localStorage.setItem('kt_admin_secret', adminSecret)
       window.location.href = '/login'
     }
     return Promise.reject(err)
@@ -24,6 +26,16 @@ adminApi.interceptors.request.use(cfg => {
   cfg.headers['X-Admin-Secret'] = localStorage.getItem('kt_admin_secret') || ''
   return cfg
 })
+adminApi.interceptors.response.use(
+  r => r,
+  err => {
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.removeItem('kt_admin_secret')
+      window.location.href = '/admin/login'
+    }
+    return Promise.reject(err)
+  }
+)
 
 export function useApi() {
   const register = (data) => api.post('/auth/register', data)
@@ -53,6 +65,10 @@ export function useApi() {
   const deliverWish = (childId, id) => api.patch(`/children/${childId}/wishes/${id}/deliver`)
 
   const getMyBalanceLogs = () => api.get('/me/balance-logs')
+  const getMyChat = () => api.get('/me/chat')
+  const sendMyChat = (body) => api.post('/me/chat', { body })
+  const getFamilyChat = (childId) => api.get(`/family-chat/${childId}`)
+  const sendFamilyChat = (childId, body) => api.post(`/family-chat/${childId}`, { body })
   const getChildBalanceLogs = (childId) => api.get(`/children/${childId}/balance-logs`)
   const setChildAvatar = (childId, avatarUrl) => api.post(`/children/${childId}/avatar`, { avatar_url: avatarUrl })
 
@@ -68,6 +84,10 @@ export function useApi() {
     getTasks, createTask, updateTask, deleteTask, submitTask, approveTask, rejectTask,
     getWishes, createWish, updateWish, deleteWish, purchaseWish, deliverWish,
     getMyBalanceLogs,
+    getMyChat,
+    sendMyChat,
+    getFamilyChat,
+    sendFamilyChat,
     getChildBalanceLogs,
     setChildAvatar,
     getStats,
@@ -98,9 +118,6 @@ export function useAdminApi() {
   const getWishes = (sort) => adminApi.get('/wishes', { params: { sort } })
 
   return {
-    getMyBalanceLogs,
-    getChildBalanceLogs,
-    setChildAvatar,
     getStats, getFamilies, blockFamily, unblockFamily, deleteFamily,
     getChildren, blockChild, unblockChild, adjustBalance, getBalanceLogs,
     getComplaints, resolveComplaint,

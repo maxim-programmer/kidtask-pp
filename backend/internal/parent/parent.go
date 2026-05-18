@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
@@ -95,6 +96,46 @@ func (s *Storage) Update(ctx context.Context, p *Parent) error {
 	return err
 }
 
+type FamilyChatMessage struct {
+	MessageID string    `json:"message_id"`
+	ChildID   string    `json:"child_id"`
+	ParentID  string    `json:"parent_id"`
+	FromChild bool      `json:"from_child"`
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (s *Storage) GetFamilyChat(ctx context.Context, childID string) ([]*FamilyChatMessage, error) {
+	rows, err := s.db.Query(ctx,
+		`SELECT message_id, child_id, parent_id, from_child, body, created_at
+		 FROM family_chat_messages WHERE child_id=$1 ORDER BY created_at ASC`,
+		childID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []*FamilyChatMessage
+	for rows.Next() {
+		m := &FamilyChatMessage{}
+		if err := rows.Scan(&m.MessageID, &m.ChildID, &m.ParentID, &m.FromChild, &m.Body, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		list = append(list, m)
+	}
+	return list, nil
+}
+
+func (s *Storage) SendFamilyChatMessage(ctx context.Context, childID, parentID, body string, fromChild bool) (*FamilyChatMessage, error) {
+	m := &FamilyChatMessage{}
+	err := s.db.QueryRow(ctx,
+		`INSERT INTO family_chat_messages (child_id, parent_id, from_child, body)
+		 VALUES ($1,$2,$3,$4) RETURNING message_id, child_id, parent_id, from_child, body, created_at`,
+		childID, parentID, fromChild, body,
+	).Scan(&m.MessageID, &m.ChildID, &m.ParentID, &m.FromChild, &m.Body, &m.CreatedAt)
+	return m, err
+}
+
 type Handler struct {
 	storage   *Storage
 	jwtSecret string
@@ -110,6 +151,10 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/api/auth/login", h.Login).Methods(http.MethodPost)
 	r.Handle("/api/me", h.mw(http.HandlerFunc(
 		middleware.RequireRole("parent", h.UpdateMe)))).Methods(http.MethodPatch)
+	r.Handle("/api/family-chat/{childId}", h.mw(http.HandlerFunc(
+		middleware.RequireRole("parent", h.GetFamilyChat)))).Methods(http.MethodGet)
+	r.Handle("/api/family-chat/{childId}", h.mw(http.HandlerFunc(
+		middleware.RequireRole("parent", h.SendFamilyChat)))).Methods(http.MethodPost)
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -262,4 +307,36 @@ func (h *Handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond.JSON(w, http.StatusOK, map[string]any{"user": p})
+}
+func (h *Handler) GetFamilyChat(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r)
+	childID := mux.Vars(r)["childId"]
+	msgs, err := h.storage.GetFamilyChat(r.Context(), childID)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
+		return
+	}
+	if msgs == nil {
+		msgs = []*FamilyChatMessage{}
+	}
+	_ = claims
+	respond.JSON(w, http.StatusOK, map[string]any{"messages": msgs})
+}
+
+func (h *Handler) SendFamilyChat(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetClaims(r)
+	childID := mux.Vars(r)["childId"]
+	var req struct {
+		Body string `json:"body"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Body == "" {
+		respond.Error(w, http.StatusBadRequest, "BAD_REQUEST", "invalid body")
+		return
+	}
+	msg, err := h.storage.SendFamilyChatMessage(r.Context(), childID, claims.UserID, req.Body, false)
+	if err != nil {
+		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
+		return
+	}
+	respond.JSON(w, http.StatusOK, map[string]any{"message": msg})
 }

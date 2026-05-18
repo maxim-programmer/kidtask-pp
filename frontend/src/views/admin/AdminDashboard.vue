@@ -35,7 +35,7 @@
             <div class="stat-label">Выполнено задач</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">{{ stats.avg_tasks_done.toFixed(1) }}</div>
+            <div class="stat-value">{{ stats.avg_tasks_done != null ? Number(stats.avg_tasks_done).toFixed(1) : '0.0' }}</div>
             <div class="stat-label">Задач на ребёнка</div>
           </div>
           <div class="stat-card">
@@ -47,7 +47,7 @@
             <div class="stat-label">Монет</div>
           </div>
           <div class="stat-card stat-card--perf">
-            <div class="stat-value">{{ responseTime }}мс</div>
+            <div class="stat-value">{{ responseTime != null ? responseTime + 'мс' : '—' }}</div>
             <div class="stat-label">Отклик API /health</div>
           </div>
         </div>
@@ -69,6 +69,7 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="families.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:24px">Нет данных</td></tr>
             <tr v-for="f in families" :key="f.parent_id">
               <td>{{ f.parent_name }}</td>
               <td>{{ f.parent_email }}</td>
@@ -101,6 +102,7 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="children.length === 0"><td colspan="6" style="text-align:center;color:#aaa;padding:24px">Нет данных</td></tr>
             <tr v-for="c in children" :key="c.child_id">
               <td>{{ c.name }}</td>
               <td>@{{ c.username }}</td>
@@ -195,6 +197,7 @@
             </tr>
           </thead>
           <tbody>
+            <tr v-if="wishes.length === 0"><td colspan="5" style="text-align:center;color:#aaa;padding:24px">Нет данных</td></tr>
             <tr v-for="w in wishes" :key="w.wish_id">
               <td>{{ w.title }}</td>
               <td>{{ w.child_name }}</td>
@@ -311,18 +314,31 @@ export default {
     }
   },
   async mounted() {
-    await this.loadStats()
+    if (!localStorage.getItem('kt_admin_secret')) {
+      this.$router.replace('/admin/login')
+      return
+    }
+    await Promise.all([
+      this.loadStats(),
+      this.loadFamilies(),
+      this.loadChildren(),
+      this.loadComplaints(),
+      this.loadChatParents(),
+      this.loadWishes(),
+    ])
   },
   methods: {
     async loadStats() {
       const { getStats } = useAdminApi()
       try {
         const t0 = Date.now()
-        await fetch('/health')
-        this.responseTime = Date.now() - t0
         const res = await getStats()
+        this.responseTime = Date.now() - t0
         this.stats = res.data
-      } catch {}
+      } catch (e) {
+        this.stats = { total_families: 0, total_children: 0, completed_tasks: 0, avg_tasks_done: 0, total_wishes: 0, total_balance: 0 }
+        this.responseTime = null
+      }
     },
     async loadFamilies() {
       const { getFamilies } = useAdminApi()
@@ -330,7 +346,8 @@ export default {
       try {
         const res = await getFamilies()
         this.families = res.data.families || []
-      } finally { this.loadingFamilies = false }
+      } catch { this.families = [] }
+      finally { this.loadingFamilies = false }
     },
     async blockFamily(f) {
       if (!confirm(`Заблокировать ${f.parent_name}?`)) return
@@ -356,7 +373,8 @@ export default {
       try {
         const res = await getChildren()
         this.children = res.data.children || []
-      } finally { this.loadingChildren = false }
+      } catch { this.children = [] }
+      finally { this.loadingChildren = false }
     },
     async blockChild(c) {
       if (!confirm(`Заблокировать ${c.name}?`)) return
@@ -402,7 +420,8 @@ export default {
       try {
         const res = await getComplaints()
         this.complaints = res.data.complaints || []
-      } finally { this.loadingComplaints = false }
+      } catch { this.complaints = [] }
+      finally { this.loadingComplaints = false }
     },
     async resolveComplaint(c) {
       const { resolveComplaint } = useAdminApi()
@@ -449,7 +468,8 @@ export default {
       try {
         const res = await getWishes(this.wishSort)
         this.wishes = res.data.wishes || []
-      } finally { this.loadingWishes = false }
+      } catch { this.wishes = [] }
+      finally { this.loadingWishes = false }
     },
     async setWishSort(sort) {
       if (this.wishSort === sort) return

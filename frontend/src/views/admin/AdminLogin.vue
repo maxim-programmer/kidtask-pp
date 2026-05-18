@@ -32,6 +32,10 @@ export default {
         this.error = 'Введите секретный ключ'
         return
       }
+      if (/[^\x00-\x7F]/.test(this.secret)) {
+        this.error = 'Секретный ключ должен содержать только латинские символы'
+        return
+      }
       try {
         const res = await fetch('/api/admin/stats', {
           headers: { 'X-Admin-Secret': this.secret }
