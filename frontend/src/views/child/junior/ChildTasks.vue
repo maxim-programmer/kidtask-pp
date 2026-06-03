@@ -23,7 +23,6 @@
               💬 {{ t.rejection_comment }}
             </div>
           </div>
-          <button class="audio-btn" @click="speak(t.title)" title="Прочитать">🔊</button>
         </div>
         <div class="task-card__footer">
           <span class="reward">⭐ {{ t.reward }}</span>
@@ -85,12 +84,6 @@ export default {
       try { await submitTask(task.task_id); await this.load() }
       catch (e) { alert('Ошибка: ' + (e.response?.data?.error?.message || 'Попробуй снова')) }
       finally { this.submitting = null }
-    },
-    speak(text) {
-      if (!window.speechSynthesis) return
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = 'ru-RU'
-      window.speechSynthesis.speak(u)
     }
   }
 }
@@ -114,7 +107,6 @@ export default {
 .task-card__title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
 .task-card__desc { font-size: 14px; color: #888; }
 .task-card__rework { font-size: 13px; color: #e53e3e; margin-top: 6px; background: #fff5f5; border-radius: 8px; padding: 6px 10px; }
-.audio-btn { background: #fff5eb; border: none; border-radius: 10px; width: 36px; height: 36px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
 .task-card__footer { display: flex; align-items: center; justify-content: space-between; }
 .reward { font-size: 20px; font-weight: 800; color: #ea580c; }
 .task-actions { display: flex; gap: 8px; }

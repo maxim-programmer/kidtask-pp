@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -117,7 +118,7 @@ func (s *Storage) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (s *Storage) DeductBalance(ctx context.Context, childID string, amount int) error {
+func (s *Storage) DeductBalance(ctx context.Context, childID string, amount int, wishTitle string) error {
 	result, err := s.db.Exec(ctx,
 		`UPDATE children SET balance = balance - $1 WHERE child_id = $2 AND balance >= $1`,
 		amount, childID,
@@ -128,7 +129,12 @@ func (s *Storage) DeductBalance(ctx context.Context, childID string, amount int)
 	if result.RowsAffected() == 0 {
 		return errors.New("insufficient coins")
 	}
-	return nil
+	reason := fmt.Sprintf("Получение цели из вишлиста: %s", wishTitle)
+	_, err = s.db.Exec(ctx,
+		`INSERT INTO balance_logs (child_id, delta, reason) VALUES ($1, $2, $3)`,
+		childID, -amount, reason,
+	)
+	return err
 }
 
 func (s *Storage) GetChildParentID(ctx context.Context, childID string) (string, error) {
@@ -342,7 +348,7 @@ func (h *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.storage.DeductBalance(r.Context(), childID, *wsh.Price); err != nil {
+	if err := h.storage.DeductBalance(r.Context(), childID, *wsh.Price, wsh.Title); err != nil {
 		respond.Error(w, http.StatusBadRequest, "INSUFFICIENT_COINS", "not enough coins")
 		return
 	}

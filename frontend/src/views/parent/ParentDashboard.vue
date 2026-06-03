@@ -15,14 +15,18 @@
             v-for="c in children" :key="c.child_id"
             :class="['tab', { 'tab--active': selectedChild?.child_id === c.child_id }]"
             @click="selectChild(c)"
-          >{{ c.name }}</button>
+          >
+            <span v-if="c.avatar_url" class="tab-avatar-wrap"><img :src="c.avatar_url" class="tab-avatar" /></span>
+            {{ c.name }}
+          </button>
         </div>
 
         <div v-if="selectedChild">
           <div class="balance-card">
+            <div class="balance-avatar" v-if="selectedChild"><img v-if="selectedChild.avatar_url" :src="selectedChild.avatar_url" class="balance-avatar-img" /><span v-else class="balance-avatar-letter">{{ selectedChild.name[0] }}</span></div>
             <div>
               <div class="balance-label">Баланс</div>
-              <div class="balance-meta">{{ selectedChild.age_group === 'junior' ? '7–10 лет' : '11–14 лет' }}</div>
+              <div class="balance-meta" v-if="ageLabel(selectedChild.birthday)">{{ ageLabel(selectedChild.birthday) }}</div>
             </div>
             <div class="balance-value">⭐ {{ selectedChild.balance }}</div>
           </div>
@@ -33,7 +37,7 @@
                 <svg viewBox="0 0 36 36">
                   <circle cx="18" cy="18" r="15" fill="none" stroke="#e8e8e8" stroke-width="3"/>
                   <circle cx="18" cy="18" r="15" fill="none" stroke="#4f7ef7" stroke-width="3"
-                    :stroke-dasharray="`${wishProgress} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+                    :stroke-dasharray="`${wishProgressCircle} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
                 </svg>
                 <span class="progress-text">{{ progress.wishes_done }}/{{ progress.wishes_total }}</span>
               </div>
@@ -56,9 +60,10 @@
             <button :class="['vtab', { 'vtab--active': view === 'overview' }]" @click="view = 'overview'">Обзор</button>
             <button :class="['vtab', { 'vtab--active': view === 'tasks' }]" @click="view = 'tasks'">Задания</button>
             <button :class="['vtab', { 'vtab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
+            <button :class="['vtab', { 'vtab--active': view === 'history' }]" @click="loadHistory">История</button>
+            <button :class="['vtab', { 'vtab--active': view === 'chat' }]" @click="loadChat">Чат</button>
           </div>
 
-          <!-- ОБЗОР -->
           <div v-if="view === 'overview'">
             <div class="section">
               <h3 class="section-title">Задания на проверке</h3>
@@ -93,7 +98,6 @@
             </div>
           </div>
 
-          <!-- ЗАДАНИЯ -->
           <div v-if="view === 'tasks'">
             <div class="filter-bar">
               <button
@@ -122,7 +126,6 @@
             </div>
           </div>
 
-          <!-- ВИШЛИСТ -->
           <div v-if="view === 'wishlist'">
             <div class="filter-bar">
               <button
@@ -151,7 +154,7 @@
               </div>
 
               <div v-if="w.price" class="wish-progress-bar">
-                <div class="wish-progress-fill" :style="{ width: Math.min(100, (selectedChild.balance / w.price) * 100) + '%' }"></div>
+                <div class="wish-progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
               </div>
 
               <div class="wish-card__actions">
@@ -174,11 +177,41 @@
               </div>
             </div>
           </div>
+          <div v-if="view === 'chat'" class="chat-wrap">
+            <div class="chat-messages" ref="chatMessages">
+              <div v-if="chatLoading" class="chat-empty">Загрузка...</div>
+              <div v-else-if="chatMessages.length === 0" class="chat-empty">Начните общение с ребёнком 💬</div>
+              <div v-for="m in chatMessages" :key="m.message_id"
+                :class="['chat-bubble', m.from_child ? 'chat-bubble--child' : 'chat-bubble--parent']">
+                <div class="chat-bubble__name">{{ m.from_child ? selectedChild.name : 'Вы' }}</div>
+                <div class="chat-bubble__body">{{ m.body }}</div>
+                <div class="chat-bubble__time">{{ formatDate(m.created_at) }}</div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input v-model="chatInput" type="text" placeholder="Написать сообщение..." class="chat-input"
+                @keyup.enter="sendChat" />
+              <button class="chat-send-btn" @click="sendChat" :disabled="!chatInput.trim()">➤</button>
+            </div>
+          </div>
+
+          <div v-if="view === 'history'">
+            <div v-if="historyLoading" class="loading">Загрузка...</div>
+            <div v-else-if="balanceLogs.length === 0" class="empty">История пуста</div>
+            <div v-for="log in balanceLogs" :key="log.log_id" :class="['log-item', log.delta > 0 ? 'log-item--plus' : 'log-item--minus']">
+              <div class="log-icon">{{ log.delta > 0 ? '⭐' : '🛒' }}</div>
+              <div class="log-info">
+                <div class="log-reason">{{ log.reason }}</div>
+                <div class="log-date">{{ formatDate(log.created_at) }}</div>
+              </div>
+              <div class="log-delta">{{ log.delta > 0 ? '+' : '' }}{{ log.delta }} ⭐</div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
 
-    <!-- Модалки -->
     <div v-if="rejectModal" class="modal-overlay" @click.self="rejectModal = false">
       <div class="modal">
         <h3>Вернуть на доработку</h3>
@@ -243,6 +276,7 @@
 import ParentLayout from '../../components/ParentLayout.vue'
 import { useApi } from '../../composables/useApi'
 import { useAuth } from '../../composables/useAuth'
+import { ageLabel, calcAge } from '../../composables/useAge'
 export default {
   name: 'ParentDashboard',
   components: { ParentLayout },
@@ -273,6 +307,8 @@ export default {
       addForm: { title: '', reward: '', description: '' },
       editModal: false, editTarget: null, editForm: { title: '', reward: '', description: '' },
       delivering: null,
+      balanceLogs: [], historyLoading: false,
+      chatMessages: [], chatLoading: false, chatInput: '',
     }
   },
   computed: {
@@ -287,7 +323,7 @@ export default {
       if (!this.wishFilter) return this.wishes
       return this.wishes.filter(w => w.status === this.wishFilter)
     },
-    wishProgress() {
+    wishProgressCircle() {
       if (!this.progress.wishes_total) return 0
       return Math.round((this.progress.wishes_done / this.progress.wishes_total) * 100)
     },
@@ -305,8 +341,46 @@ export default {
     } finally { this.loading = false }
   },
   methods: {
+    async loadChat() {
+      this.view = 'chat'
+      this.chatLoading = true
+      const { getFamilyChat } = useApi()
+      try {
+        const res = await getFamilyChat(this.selectedChild.child_id)
+        this.chatMessages = res.data.messages || []
+        this.$nextTick(() => this.scrollChat())
+      } finally { this.chatLoading = false }
+    },
+    async sendChat() {
+      if (!this.chatInput.trim()) return
+      const { sendFamilyChat } = useApi()
+      const res = await sendFamilyChat(this.selectedChild.child_id, this.chatInput.trim())
+      this.chatMessages.push(res.data.message)
+      this.chatInput = ''
+      this.$nextTick(() => this.scrollChat())
+    },
+    scrollChat() {
+      const el = this.$refs.chatMessages
+      if (el) el.scrollTop = el.scrollHeight
+    },
+    async loadHistory() {
+      this.view = 'history'
+      this.balanceLogs = []
+      this.historyLoading = true
+      const { getChildBalanceLogs } = useApi()
+      try {
+        const res = await getChildBalanceLogs(this.selectedChild.child_id)
+        this.balanceLogs = res.data.logs || []
+      } finally { this.historyLoading = false }
+    },
+    formatDate(d) {
+      return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    },
     async selectChild(child) {
       this.selectedChild = child
+      this.balanceLogs = []
+      this.chatMessages = []
+      if (this.view === 'history' || this.view === 'chat') this.view = 'overview'
       const { getWishes, getTasks } = useApi()
       const [w, t] = await Promise.all([
         getWishes(child.child_id),
@@ -321,7 +395,21 @@ export default {
         tasks_done: this.tasks.filter(x => x.status === 'completed').length
       }
     },
-    async reload() { await this.selectChild(this.selectedChild) },
+    async reload() {
+      const { getChildren } = useApi()
+      const res = await getChildren()
+      this.children = res.data.children || []
+      const updated = this.children.find(c => c.child_id === this.selectedChild.child_id)
+      if (updated) this.selectedChild = updated
+      await this.selectChild(this.selectedChild)
+    },
+    wishProgress(w) {
+      if (!w.price) return 0
+      if (w.status === 'purchased' || w.status === 'delivered') return 100
+      return Math.min(100, Math.round((this.selectedChild.balance / w.price) * 100))
+    },
+    ageLabel,
+    calcAge,
     statusLabel(s) {
       return { active: 'Активное', pending_review: 'На проверке', needs_rework: 'На доработке', completed: 'Выполнено' }[s] || s
     },
@@ -504,4 +592,35 @@ export default {
 .field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; }
 .field input:focus { border-color: #4f7ef7; }
 .error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 10px; }
+.log-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.log-item--plus { border-left: 4px solid #22c55e; }
+.log-item--minus { border-left: 4px solid #4f7ef7; }
+.log-icon { font-size: 22px; flex-shrink: 0; }
+.log-info { flex: 1; min-width: 0; }
+.log-reason { font-size: 14px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+.log-delta { font-size: 16px; font-weight: 800; flex-shrink: 0; }
+.log-item--plus .log-delta { color: #22c55e; }
+.log-item--minus .log-delta { color: #4f7ef7; }
+.tab-avatar-wrap { display: inline-block; width: 20px; height: 20px; border-radius: 50%; overflow: hidden; vertical-align: middle; margin-right: 5px; flex-shrink: 0; }
+.tab-avatar { width: 100%; height: 100%; object-fit: cover; }
+.balance-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #4f7ef7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.balance-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.balance-avatar-letter { font-size: 20px; font-weight: 700; color: #fff; }
+.chat-wrap { display: flex; flex-direction: column; height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-empty { text-align: center; color: #bbb; font-size: 14px; margin: auto; }
+.chat-bubble { max-width: 70%; display: flex; flex-direction: column; gap: 2px; }
+.chat-bubble--parent { align-self: flex-end; align-items: flex-end; }
+.chat-bubble--child { align-self: flex-start; align-items: flex-start; }
+.chat-bubble__name { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 2px; }
+.chat-bubble__body { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+.chat-bubble--parent .chat-bubble__body { background: #4f7ef7; color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble--child .chat-bubble__body { background: #f0f4ff; color: #1a1a1a; border-bottom-left-radius: 4px; }
+.chat-bubble__time { font-size: 10px; color: #bbb; margin-top: 2px; }
+.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #f0f0f0; background: #fff; }
+.chat-input { flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; font-family: inherit; }
+.chat-input:focus { border-color: #4f7ef7; }
+.chat-send-btn { width: 40px; height: 40px; border-radius: 50%; background: #4f7ef7; color: #fff; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
 </style>

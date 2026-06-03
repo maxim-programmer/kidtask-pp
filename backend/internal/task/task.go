@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -152,12 +153,20 @@ func (s *Storage) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (s *Storage) AddBalance(ctx context.Context, childID string, amount int) (int, error) {
+func (s *Storage) AddBalance(ctx context.Context, childID string, amount int, taskTitle string) (int, error) {
 	var newBalance int
 	err := s.db.QueryRow(ctx,
 		`UPDATE children SET balance = balance + $1 WHERE child_id = $2 RETURNING balance`,
 		amount, childID,
 	).Scan(&newBalance)
+	if err != nil {
+		return 0, err
+	}
+	reason := fmt.Sprintf("Выполнение задания: %s", taskTitle)
+	_, err = s.db.Exec(ctx,
+		`INSERT INTO balance_logs (child_id, delta, reason) VALUES ($1, $2, $3)`,
+		childID, amount, reason,
+	)
 	return newBalance, err
 }
 
@@ -410,7 +419,7 @@ func (h *Handler) Approve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newBalance, err := h.storage.AddBalance(r.Context(), t.ChildID, t.Reward)
+	newBalance, err := h.storage.AddBalance(r.Context(), t.ChildID, t.Reward, t.Title)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
 		return

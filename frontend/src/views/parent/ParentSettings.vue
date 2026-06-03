@@ -21,10 +21,13 @@
       <div v-if="loadingChildren" class="loading">Загрузка...</div>
       <div v-else>
         <div v-for="child in children" :key="child.child_id" class="card child-row">
-          <div class="child-avatar">{{ child.name[0] }}</div>
+          <div class="child-avatar">
+            <img v-if="child.avatar_url" :src="child.avatar_url" class="child-avatar-img" />
+            <span v-else>{{ child.name[0] }}</span>
+          </div>
           <div class="child-info">
             <div class="child-name">{{ child.name }}</div>
-            <div class="child-meta">@{{ child.username }} · {{ child.age_group === 'junior' ? '7–10 лет' : '11–14 лет' }}</div>
+            <div class="child-meta">@{{ child.username }}<span v-if="ageLabel(child.birthday)" class="age-chip"> · {{ ageLabel(child.birthday) }}</span><span v-else class="age-chip age-chip--none"> · возраст не указан</span></div>
           </div>
           <button class="edit-btn" @click="openChildModal(child)">Изменить</button>
         </div>
@@ -152,6 +155,7 @@
 import ParentLayout from '../../components/ParentLayout.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
+import { ageLabel } from '../../composables/useAge'
 
 export default {
   name: 'ParentSettings',
@@ -262,6 +266,7 @@ export default {
       }
     },
 
+    ageLabel,
     formatDate(d) {
       return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
     },
@@ -378,7 +383,8 @@ export default {
 .email { font-size: 13px; color: #888; margin-top: 2px; }
 
 .child-row { display: flex; align-items: center; gap: 14px; }
-.child-avatar { width: 44px; height: 44px; border-radius: 50%; background: #4f7ef7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+.child-avatar { width: 44px; height: 44px; border-radius: 50%; background: #4f7ef7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.child-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .child-info { flex: 1; }
 .child-name { font-size: 16px; font-weight: 700; }
 .child-meta { font-size: 13px; color: #888; margin-top: 2px; }
@@ -428,4 +434,6 @@ export default {
 .btn-primary { flex: 1; padding: 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
 .btn-primary:hover:not(:disabled) { background: #3a6be0; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.age-chip { background: #f0f4ff; color: #4f7ef7; border-radius: 6px; padding: 1px 7px; font-size: 12px; font-weight: 600; margin-left: 2px; }
+.age-chip--none { background: #f5f5f5; color: #bbb; }
 </style>

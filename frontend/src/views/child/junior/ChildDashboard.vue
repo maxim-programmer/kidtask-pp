@@ -6,9 +6,10 @@
         <button :class="['tab', { 'tab--active': view === 'progress' }]" @click="view = 'progress'">Прогресс</button>
         <button :class="['tab', { 'tab--active': view === 'tasks' }]" @click="view = 'tasks'">Задания</button>
         <button :class="['tab', { 'tab--active': view === 'wishlist' }]" @click="view = 'wishlist'">Вишлист</button>
+        <button :class="['tab', { 'tab--active': view === 'history' }]" @click="loadHistory">История</button>
+        <button :class="['tab', { 'tab--active': view === 'chat' }]" @click="loadChat">Чат</button>
       </div>
 
-      <!-- ПРОГРЕСС -->
       <div v-if="view === 'progress'">
         <div class="balance-card">
           <div class="balance-label">Мой баланс</div>
@@ -40,7 +41,6 @@
         </div>
       </div>
 
-      <!-- ЗАДАНИЯ -->
       <div v-if="view === 'tasks'">
         <div class="filter-bar">
           <button v-for="f in taskFilters" :key="f.value"
@@ -55,7 +55,6 @@
               <div class="task-card__desc" v-if="t.description">{{ t.description }}</div>
               <div class="task-card__rework" v-if="t.rejection_comment">💬 {{ t.rejection_comment }}</div>
             </div>
-            <button class="audio-btn" @click="speak(t.title)">🔊</button>
           </div>
           <div class="task-card__footer">
             <span class="reward">⭐ {{ t.reward }}</span>
@@ -72,7 +71,6 @@
         </div>
       </div>
 
-      <!-- ВИШЛИСТ -->
       <div v-if="view === 'wishlist'">
         <div v-if="wishes.length === 0" class="empty">Добавь свою первую цель! 🎯</div>
         <div v-for="w in wishes" :key="w.wish_id" class="wish-card">
@@ -94,7 +92,7 @@
             </div>
           </div>
           <div v-if="w.price" class="progress-bar">
-            <div class="progress-fill" :style="{ width: Math.min(100, ((user?.balance || 0) / w.price) * 100) + '%' }"></div>
+            <div class="progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
           </div>
           <div class="wish-actions">
             <button
@@ -111,7 +109,38 @@
         </div>
         <button class="add-btn" @click="showModal = true">+ Добавить цель</button>
       </div>
+      <div v-if="view === 'history'">
+        <div v-if="historyLoading" class="loading">Загрузка...</div>
+        <div v-else-if="balanceLogs.length === 0" class="empty">История пуста</div>
+        <div v-for="log in balanceLogs" :key="log.log_id" :class="['log-item', log.delta > 0 ? 'log-item--plus' : 'log-item--minus']">
+          <div class="log-icon">{{ log.delta > 0 ? '⭐' : '🛒' }}</div>
+          <div class="log-info">
+            <div class="log-reason">{{ log.reason }}</div>
+            <div class="log-date">{{ formatDate(log.created_at) }}</div>
+          </div>
+          <div class="log-delta">{{ log.delta > 0 ? '+' : '' }}{{ log.delta }} ⭐</div>
+        </div>
+      </div>
+
     </div>
+
+      <div v-if="view === 'chat'" class="chat-wrap">
+        <div class="chat-messages" ref="chatMessages">
+          <div v-if="chatLoading" class="chat-empty">Загрузка...</div>
+          <div v-else-if="chatMessages.length === 0" class="chat-empty">Напиши что-нибудь родителю 💬</div>
+          <div v-for="m in chatMessages" :key="m.message_id"
+            :class="['chat-bubble', m.from_child ? 'chat-bubble--me' : 'chat-bubble--parent']">
+            <div class="chat-bubble__name">{{ m.from_child ? 'Я' : 'Родитель' }}</div>
+            <div class="chat-bubble__body">{{ m.body }}</div>
+            <div class="chat-bubble__time">{{ formatDate(m.created_at) }}</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input v-model="chatInput" type="text" placeholder="Написать сообщение..."
+            class="chat-input" @keyup.enter="sendChat" />
+          <button class="chat-send-btn" @click="sendChat" :disabled="!chatInput.trim()">➤</button>
+        </div>
+      </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal">
@@ -155,6 +184,8 @@ export default {
       submitting: null, buying: null,
       showModal: false, saving: false, wishError: '',
       form: { title: '', description: '' },
+      balanceLogs: [], historyLoading: false,
+      chatMessages: [], chatLoading: false, chatInput: '',
     }
   },
   computed: {
@@ -196,6 +227,11 @@ export default {
         this.user = authUser
       } finally { this.loading = false }
     },
+    wishProgress(w) {
+      if (!w.price) return 0
+      if (w.status === 'purchased' || w.status === 'delivered') return 100
+      return Math.min(100, Math.round(((this.user?.balance || 0) / w.price) * 100))
+    },
     async submit(task) {
       this.submitting = task.task_id
       const { submitTask } = useApi()
@@ -210,6 +246,41 @@ export default {
       catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') }
       finally { this.buying = null }
     },
+    async loadHistory() {
+      this.view = 'history'
+      if (this.balanceLogs.length) return
+      this.historyLoading = true
+      const { getMyBalanceLogs } = useApi()
+      try {
+        const res = await getMyBalanceLogs()
+        this.balanceLogs = res.data.logs || []
+      } finally { this.historyLoading = false }
+    },
+    formatDate(d) {
+      return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    },
+    async loadChat() {
+      this.view = 'chat'
+      this.chatLoading = true
+      const { getMyChat } = useApi()
+      try {
+        const res = await getMyChat()
+        this.chatMessages = res.data.messages || []
+        this.$nextTick(() => this.scrollChat())
+      } finally { this.chatLoading = false }
+    },
+    async sendChat() {
+      if (!this.chatInput.trim()) return
+      const { sendMyChat } = useApi()
+      const res = await sendMyChat(this.chatInput.trim())
+      this.chatMessages.push(res.data.message)
+      this.chatInput = ''
+      this.$nextTick(() => this.scrollChat())
+    },
+    scrollChat() {
+      const el = this.$refs.chatMessages
+      if (el) el.scrollTop = el.scrollHeight
+    },
     async addWish() {
       this.saving = true; this.wishError = ''
       const { createWish } = useApi()
@@ -220,12 +291,6 @@ export default {
         await this.load()
       } catch (e) { this.wishError = e.response?.data?.error?.message || 'Ошибка' }
       finally { this.saving = false }
-    },
-    speak(text) {
-      if (!window.speechSynthesis) return
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = 'ru-RU'
-      window.speechSynthesis.speak(u)
     }
   }
 }
@@ -264,7 +329,6 @@ export default {
 .task-card__title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
 .task-card__desc { font-size: 14px; color: #888; }
 .task-card__rework { font-size: 13px; color: #e53e3e; margin-top: 6px; background: #fff5f5; border-radius: 8px; padding: 6px 10px; }
-.audio-btn { background: #fff5eb; border: none; border-radius: 10px; width: 36px; height: 36px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
 .task-card__footer { display: flex; align-items: center; justify-content: space-between; }
 .reward { font-size: 20px; font-weight: 800; color: #ea580c; }
 .done-btn { padding: 10px 20px; background: #22c55e; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
@@ -308,4 +372,30 @@ export default {
 .btn-primary { width: 100%; padding: 14px; background: #ea580c; color: #fff; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; font-family: inherit; }
 .btn-primary:hover:not(:disabled) { background: #c2410c; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.log-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(234,88,12,0.07); }
+.log-item--plus { border-left: 4px solid #22c55e; }
+.log-item--minus { border-left: 4px solid #ea580c; }
+.log-icon { font-size: 24px; flex-shrink: 0; }
+.log-info { flex: 1; }
+.log-reason { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.log-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+.log-delta { font-size: 18px; font-weight: 800; flex-shrink: 0; }
+.log-item--plus .log-delta { color: #22c55e; }
+.log-item--minus .log-delta { color: #ea580c; }
+.chat-wrap { display: flex; flex-direction: column; height: 460px; background: #fff; border-radius: 20px; box-shadow: 0 2px 8px rgba(234,88,12,0.08); overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-empty { text-align: center; color: #bbb; font-size: 15px; margin: auto; }
+.chat-bubble { max-width: 75%; display: flex; flex-direction: column; gap: 2px; }
+.chat-bubble--me { align-self: flex-end; align-items: flex-end; }
+.chat-bubble--parent { align-self: flex-start; align-items: flex-start; }
+.chat-bubble__name { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 2px; }
+.chat-bubble__body { padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+.chat-bubble--me .chat-bubble__body { background: #ea580c; color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble--parent .chat-bubble__body { background: #fff5eb; color: #1a1a1a; border-bottom-left-radius: 4px; }
+.chat-bubble__time { font-size: 10px; color: #bbb; margin-top: 2px; }
+.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 2px solid #fed7aa; background: #fff; }
+.chat-input { flex: 1; padding: 10px 14px; border: 2px solid #fed7aa; border-radius: 24px; font-size: 15px; outline: none; font-family: inherit; }
+.chat-input:focus { border-color: #ea580c; }
+.chat-send-btn { width: 42px; height: 42px; border-radius: 50%; background: #ea580c; color: #fff; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.chat-send-btn:disabled { background: #fed7aa; cursor: not-allowed; }
 </style>

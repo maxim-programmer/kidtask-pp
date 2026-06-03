@@ -36,7 +36,7 @@
         </div>
 
         <div v-if="w.price" class="progress-bar">
-          <div class="progress-fill" :style="{ width: Math.min(100, (balance / w.price) * 100) + '%' }"></div>
+          <div class="progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
         </div>
 
         <div class="wish-actions">
@@ -124,6 +124,11 @@ export default {
         this.wishes = wr.data.wishes || []
         this.balance = me.data.user?.balance || 0
       } finally { this.loading = false }
+    },
+    wishProgress(w) {
+      if (!w.price) return 0
+      if (w.status === 'purchased' || w.status === 'delivered') return 100
+      return Math.min(100, Math.round((this.balance / w.price) * 100))
     },
     async addWish() {
       this.saving = true; this.error = ''
