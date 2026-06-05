@@ -6,6 +6,7 @@ type Config struct {
 	ServerAddr  string
 	DatabaseURL string
 	JWTSecret   string
+	AdminSecret string
 }
 
 func Load() Config {
@@ -13,6 +14,7 @@ func Load() Config {
 		ServerAddr:  getEnv("SERVER_ADDR", ":8080"),
 		DatabaseURL: getEnv("DATABASE_URL", ""),
 		JWTSecret:   getEnv("JWT_SECRET", "dev_secret"),
+		AdminSecret: getEnv("ADMIN_SECRET", "admin-secret"),
 	}
 }
 

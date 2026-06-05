@@ -87,6 +87,7 @@ POSTGRES_PASSWORD=secret
 DATABASE_URL=postgres://kidtask:secret@db:5432/kidtask?sslmode=disable
 SERVER_ADDR=:8080
 JWT_SECRET=supersecretkey123
+ADMIN_SECRET=admin
 ```
 
 ### 3. Запустить через Docker Compose

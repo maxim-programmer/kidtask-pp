@@ -12,8 +12,26 @@ api.interceptors.response.use(
   r => r,
   err => {
     if (err.response?.status === 401) {
+      const adminSecret = localStorage.getItem('kt_admin_secret')
       localStorage.clear()
+      if (adminSecret) localStorage.setItem('kt_admin_secret', adminSecret)
       window.location.href = '/login'
+    }
+    return Promise.reject(err)
+  }
+)
+
+const adminApi = axios.create({ baseURL: '/api/admin' })
+adminApi.interceptors.request.use(cfg => {
+  cfg.headers['X-Admin-Secret'] = localStorage.getItem('kt_admin_secret') || ''
+  return cfg
+})
+adminApi.interceptors.response.use(
+  r => r,
+  err => {
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.removeItem('kt_admin_secret')
+      window.location.href = '/admin/login'
     }
     return Promise.reject(err)
   }
@@ -24,9 +42,11 @@ export function useApi() {
   const login = (data) => api.post('/auth/login', data)
   const loginChild = (data) => api.post('/auth/child/login', data)
   const getMe = () => api.get('/me')
+  const updateMe = (data) => api.patch('/me', data)
 
   const getChildren = () => api.get('/children')
   const createChild = (data) => api.post('/children', data)
+  const updateChild = (id, data) => api.patch(`/children/${id}`, data)
   const deleteChild = (id) => api.delete(`/children/${id}`)
 
   const getTasks = (params) => api.get('/tasks', { params })
@@ -44,13 +64,64 @@ export function useApi() {
   const purchaseWish = (childId, id) => api.post(`/children/${childId}/wishes/${id}/purchase`)
   const deliverWish = (childId, id) => api.patch(`/children/${childId}/wishes/${id}/deliver`)
 
+  const getMyBalanceLogs = () => api.get('/me/balance-logs')
+  const getMyChat = () => api.get('/me/chat')
+  const sendMyChat = (body) => api.post('/me/chat', { body })
+  const getFamilyChat = (childId) => api.get(`/family-chat/${childId}`)
+  const sendFamilyChat = (childId, body) => api.post(`/family-chat/${childId}`, { body })
+  const getChildBalanceLogs = (childId) => api.get(`/children/${childId}/balance-logs`)
+  const setChildAvatar = (childId, avatarUrl) => api.post(`/children/${childId}/avatar`, { avatar_url: avatarUrl })
+
   const getStats = () => api.get('/stats')
 
+  const getSupportChat = (parentId) => api.get('/support/chat', { params: { parent_id: parentId } })
+  const sendSupportMessage = (parentId, body) => api.post('/support/chat', { parent_id: parentId, body })
+  const createComplaint = (parentId, subject, body) => api.post('/support/complaints', { parent_id: parentId, subject, body })
+
   return {
-    register, login, loginChild, getMe,
-    getChildren, createChild, deleteChild,
+    register, login, loginChild, getMe, updateMe,
+    getChildren, createChild, updateChild, deleteChild,
     getTasks, createTask, updateTask, deleteTask, submitTask, approveTask, rejectTask,
     getWishes, createWish, updateWish, deleteWish, purchaseWish, deliverWish,
+    getMyBalanceLogs,
+    getMyChat,
+    sendMyChat,
+    getFamilyChat,
+    sendFamilyChat,
+    getChildBalanceLogs,
+    setChildAvatar,
     getStats,
+    getSupportChat, sendSupportMessage, createComplaint,
+  }
+}
+
+export function useAdminApi() {
+  const getStats = () => adminApi.get('/stats')
+  const getFamilies = () => adminApi.get('/families')
+  const blockFamily = (id) => adminApi.post(`/families/${id}/block`)
+  const unblockFamily = (id) => adminApi.post(`/families/${id}/unblock`)
+  const deleteFamily = (id) => adminApi.delete(`/families/${id}`)
+
+  const getChildren = () => adminApi.get('/children')
+  const blockChild = (id) => adminApi.post(`/children/${id}/block`)
+  const unblockChild = (id) => adminApi.post(`/children/${id}/unblock`)
+  const adjustBalance = (id, delta, reason) => adminApi.post(`/children/${id}/balance`, { delta, reason })
+  const getBalanceLogs = (id) => adminApi.get(`/children/${id}/logs`)
+
+  const getComplaints = () => adminApi.get('/complaints')
+  const resolveComplaint = (id) => adminApi.post(`/complaints/${id}/resolve`)
+
+  const getChatParents = () => adminApi.get('/chat')
+  const getChatMessages = (parentId) => adminApi.get(`/chat/${parentId}`)
+  const sendChatMessage = (parentId, body) => adminApi.post(`/chat/${parentId}`, { body })
+
+  const getWishes = (sort) => adminApi.get('/wishes', { params: { sort } })
+
+  return {
+    getStats, getFamilies, blockFamily, unblockFamily, deleteFamily,
+    getChildren, blockChild, unblockChild, adjustBalance, getBalanceLogs,
+    getComplaints, resolveComplaint,
+    getChatParents, getChatMessages, sendChatMessage,
+    getWishes,
   }
 }

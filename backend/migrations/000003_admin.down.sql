@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS chat_messages;
+DROP TABLE IF EXISTS complaints;
+DROP TABLE IF EXISTS balance_logs;
+ALTER TABLE children DROP COLUMN IF EXISTS is_blocked;
+ALTER TABLE parents DROP COLUMN IF EXISTS is_blocked;
