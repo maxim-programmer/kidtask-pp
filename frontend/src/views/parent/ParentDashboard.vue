@@ -5,8 +5,9 @@
       <h1 class="greeting">Добрый день, {{ user?.name }}!</h1>
 
       <div v-if="!children.length" class="no-child">
+        <div class="no-child__icon">👶</div>
         <p>Добавьте ребёнка, чтобы начать</p>
-        <button class="btn-primary" @click="$router.push('/parent/children')">Мои дети</button>
+        <button class="btn-primary" @click="$router.push('/parent/children')">Добавить ребёнка</button>
       </div>
 
       <div v-else>
@@ -23,9 +24,9 @@
 
         <div v-if="selectedChild">
           <div class="balance-card">
-            <div class="balance-avatar" v-if="selectedChild"><img v-if="selectedChild.avatar_url" :src="selectedChild.avatar_url" class="balance-avatar-img" /><span v-else class="balance-avatar-letter">{{ selectedChild.name[0] }}</span></div>
-            <div>
-              <div class="balance-label">Баланс</div>
+            <div class="balance-avatar"><img v-if="selectedChild.avatar_url" :src="selectedChild.avatar_url" class="balance-avatar-img" /><span v-else class="balance-avatar-letter">{{ selectedChild.name[0] }}</span></div>
+            <div class="balance-info">
+              <div class="balance-label">{{ selectedChild.name }}</div>
               <div class="balance-meta" v-if="ageLabel(selectedChild.birthday)">{{ ageLabel(selectedChild.birthday) }}</div>
             </div>
             <div class="balance-value">⭐ {{ selectedChild.balance }}</div>
@@ -34,22 +35,14 @@
           <div class="progress-row">
             <div class="progress-item">
               <div class="progress-circle">
-                <svg viewBox="0 0 36 36">
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="#e8e8e8" stroke-width="3"/>
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="#4f7ef7" stroke-width="3"
-                    :stroke-dasharray="`${wishProgressCircle} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
-                </svg>
+                <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#e8e8e8" stroke-width="3"/><circle cx="18" cy="18" r="15" fill="none" stroke="#4f7ef7" stroke-width="3" :stroke-dasharray="`${wishProgressCircle} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/></svg>
                 <span class="progress-text">{{ progress.wishes_done }}/{{ progress.wishes_total }}</span>
               </div>
               <span class="progress-label">Целей</span>
             </div>
             <div class="progress-item">
               <div class="progress-circle">
-                <svg viewBox="0 0 36 36">
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="#e8e8e8" stroke-width="3"/>
-                  <circle cx="18" cy="18" r="15" fill="none" stroke="#4f7ef7" stroke-width="3"
-                    :stroke-dasharray="`${taskProgress} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
-                </svg>
+                <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#e8e8e8" stroke-width="3"/><circle cx="18" cy="18" r="15" fill="none" stroke="#4f7ef7" stroke-width="3" :stroke-dasharray="`${taskProgress} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/></svg>
                 <span class="progress-text">{{ progress.tasks_done }}/{{ progress.tasks_total }}</span>
               </div>
               <span class="progress-label">Заданий</span>
@@ -68,7 +61,7 @@
             <div class="section">
               <h3 class="section-title">Задания на проверке</h3>
               <div v-if="pendingTasks.length === 0" class="empty">Нет заданий на проверке</div>
-              <div v-for="t in pendingTasks" :key="t.task_id" class="task-card">
+              <div v-for="t in pendingTasks" :key="t.task_id" class="task-card task-card--pending_review">
                 <div class="task-card__info">
                   <div class="task-card__title">{{ t.title }}</div>
                   <div class="task-card__comment" v-if="t.description">{{ t.description }}</div>
@@ -100,10 +93,7 @@
 
           <div v-if="view === 'tasks'">
             <div class="filter-bar">
-              <button
-                v-for="f in taskFilters" :key="f.value"
-                :class="['chip', { 'chip--active': taskFilter === f.value }]"
-                @click="taskFilter = f.value">{{ f.label }}</button>
+              <button v-for="f in taskFilters" :key="f.value" :class="['chip', { 'chip--active': taskFilter === f.value }]" @click="taskFilter = f.value">{{ f.label }}</button>
             </div>
             <div class="add-task-row">
               <button class="btn-add" @click="showAddTask = true">+ Новое задание</button>
@@ -118,20 +108,17 @@
               </div>
               <div class="task-card__actions">
                 <span class="reward-badge">⭐ {{ t.reward }}</span>
-                <button class="icon-btn icon-btn--approve" v-if="t.status === 'pending_review'" @click="approve(t)" title="Одобрить">✓</button>
-                <button class="icon-btn icon-btn--reject" v-if="t.status === 'pending_review'" @click="openReject(t)" title="Вернуть">✗</button>
-                <button class="icon-btn icon-btn--edit" v-if="t.status === 'active'" @click="openEdit(t)" title="Редактировать">✏</button>
-                <button class="icon-btn icon-btn--delete" @click="deleteTask(t)" title="Удалить">🗑</button>
+                <button class="icon-btn icon-btn--approve" v-if="t.status === 'pending_review'" @click="approve(t)">✓</button>
+                <button class="icon-btn icon-btn--reject" v-if="t.status === 'pending_review'" @click="openReject(t)">✗</button>
+                <button class="icon-btn icon-btn--edit" v-if="t.status === 'active'" @click="openEdit(t)">✏</button>
+                <button class="icon-btn icon-btn--delete" @click="deleteTask(t)">🗑</button>
               </div>
             </div>
           </div>
 
           <div v-if="view === 'wishlist'">
             <div class="filter-bar">
-              <button
-                v-for="f in wishFilters" :key="f.value"
-                :class="['chip', { 'chip--active': wishFilter === f.value }]"
-                @click="wishFilter = f.value">{{ f.label }}</button>
+              <button v-for="f in wishFilters" :key="f.value" :class="['chip', { 'chip--active': wishFilter === f.value }]" @click="wishFilter = f.value">{{ f.label }}</button>
             </div>
             <div v-if="filteredWishes.length === 0" class="empty">Нет целей</div>
             <div v-for="w in filteredWishes" :key="w.wish_id" class="wish-card wish-card--full">
@@ -140,57 +127,44 @@
                   <div class="wish-card__title">{{ w.title }}</div>
                   <div class="wish-card__desc" v-if="w.description">{{ w.description }}</div>
                 </div>
-                <div class="wish-card__status-col">
-                  <span :class="['wish-status', `wish-status--${w.status}`]">{{ wishStatusLabel(w.status) }}</span>
-                </div>
+                <span :class="['wish-status', `wish-status--${w.status}`]">{{ wishStatusLabel(w.status) }}</span>
               </div>
-
               <div class="wish-steps">
-                <span :class="['step', 'step--done']">⭐ Создано</span>
+                <span class="step step--done">⭐ Создано</span>
                 <span class="arrow">→</span>
                 <span :class="['step', { 'step--done': w.status === 'purchased' || w.status === 'delivered' }]">🛒 Куплено</span>
                 <span class="arrow">→</span>
                 <span :class="['step', { 'step--done': w.status === 'delivered' }]">🎁 Доставлено</span>
               </div>
-
               <div v-if="w.price" class="wish-progress-bar">
                 <div class="wish-progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
               </div>
-
               <div class="wish-card__actions">
                 <div v-if="w.status === 'awaiting_price'" class="price-set-row">
                   <input type="number" v-model.number="priceInputs[w.wish_id]" placeholder="⭐ Стоимость" class="price-input" min="1" />
                   <button class="btn-small" @click="setPrice(w)">Установить</button>
                 </div>
                 <div v-else class="wish-price-display">⭐ {{ w.price ?? '?' }}</div>
-
                 <div class="wish-btns">
-                  <button
-                    v-if="w.status === 'purchased'"
-                    class="btn-deliver"
-                    @click="deliver(w)"
-                    :disabled="delivering === w.wish_id">
-                    {{ delivering === w.wish_id ? '...' : '🎁 Доставлено' }}
-                  </button>
-                  <button class="icon-btn icon-btn--delete" @click="deleteWish(w)" title="Удалить">🗑</button>
+                  <button v-if="w.status === 'purchased'" class="btn-deliver" @click="deliver(w)" :disabled="delivering === w.wish_id">{{ delivering === w.wish_id ? '...' : '🎁 Доставлено' }}</button>
+                  <button class="icon-btn icon-btn--delete" @click="deleteWish(w)">🗑</button>
                 </div>
               </div>
             </div>
           </div>
+
           <div v-if="view === 'chat'" class="chat-wrap">
             <div class="chat-messages" ref="chatMessages">
               <div v-if="chatLoading" class="chat-empty">Загрузка...</div>
-              <div v-else-if="chatMessages.length === 0" class="chat-empty">Начните общение с ребёнком 💬</div>
-              <div v-for="m in chatMessages" :key="m.message_id"
-                :class="['chat-bubble', m.from_child ? 'chat-bubble--child' : 'chat-bubble--parent']">
+              <div v-else-if="chatMsgs.length === 0" class="chat-empty">Начните общение с ребёнком 💬</div>
+              <div v-for="m in chatMsgs" :key="m.message_id" :class="['chat-bubble', m.from_child ? 'chat-bubble--child' : 'chat-bubble--parent']">
                 <div class="chat-bubble__name">{{ m.from_child ? selectedChild.name : 'Вы' }}</div>
                 <div class="chat-bubble__body">{{ m.body }}</div>
                 <div class="chat-bubble__time">{{ formatDate(m.created_at) }}</div>
               </div>
             </div>
             <div class="chat-input-row">
-              <input v-model="chatInput" type="text" placeholder="Написать сообщение..." class="chat-input"
-                @keyup.enter="sendChat" />
+              <input v-model="chatInput" type="text" placeholder="Написать сообщение..." class="chat-input" @keyup.enter="sendChat" />
               <button class="chat-send-btn" @click="sendChat" :disabled="!chatInput.trim()">➤</button>
             </div>
           </div>
@@ -207,7 +181,6 @@
               <div class="log-delta">{{ log.delta > 0 ? '+' : '' }}{{ log.delta }} ⭐</div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -226,24 +199,13 @@
     <div v-if="showAddTask" class="modal-overlay" @click.self="showAddTask = false">
       <div class="modal">
         <h3>Новое задание</h3>
-        <div class="field">
-          <label>Название</label>
-          <input v-model="addForm.title" type="text" placeholder="Убрать комнату" />
-        </div>
-        <div class="field">
-          <label>Награда (⭐)</label>
-          <input v-model.number="addForm.reward" type="number" min="1" placeholder="10" />
-        </div>
-        <div class="field">
-          <label>Описание</label>
-          <textarea v-model="addForm.description" rows="2" class="modal-textarea" placeholder="Необязательно..."></textarea>
-        </div>
+        <div class="field"><label>Название</label><input v-model="addForm.title" type="text" placeholder="Убрать комнату" /></div>
+        <div class="field"><label>Награда (⭐)</label><input v-model.number="addForm.reward" type="number" min="1" placeholder="10" /></div>
+        <div class="field"><label>Описание</label><textarea v-model="addForm.description" rows="2" class="modal-textarea" placeholder="Необязательно..."></textarea></div>
         <div v-if="addError" class="error-msg">{{ addError }}</div>
         <div class="modal-actions">
           <button class="btn-outline" @click="showAddTask = false">Отмена</button>
-          <button class="btn-primary-sm" @click="createTask" :disabled="saving">
-            {{ saving ? '...' : 'Добавить' }}
-          </button>
+          <button class="btn-primary-sm" @click="createTask" :disabled="saving">{{ saving ? '...' : 'Добавить' }}</button>
         </div>
       </div>
     </div>
@@ -251,18 +213,9 @@
     <div v-if="editModal" class="modal-overlay" @click.self="editModal = false">
       <div class="modal">
         <h3>Редактировать задание</h3>
-        <div class="field">
-          <label>Название</label>
-          <input v-model="editForm.title" type="text" />
-        </div>
-        <div class="field">
-          <label>Награда (⭐)</label>
-          <input v-model.number="editForm.reward" type="number" min="1" />
-        </div>
-        <div class="field">
-          <label>Описание</label>
-          <textarea v-model="editForm.description" rows="2" class="modal-textarea"></textarea>
-        </div>
+        <div class="field"><label>Название</label><input v-model="editForm.title" type="text" /></div>
+        <div class="field"><label>Награда (⭐)</label><input v-model.number="editForm.reward" type="number" min="1" /></div>
+        <div class="field"><label>Описание</label><textarea v-model="editForm.description" rows="2" class="modal-textarea"></textarea></div>
         <div class="modal-actions">
           <button class="btn-outline" @click="editModal = false">Отмена</button>
           <button class="btn-primary-sm" @click="saveEdit">Сохранить</button>
@@ -292,7 +245,7 @@ export default {
         { value: '', label: 'Все' },
         { value: 'active', label: 'Активные' },
         { value: 'pending_review', label: 'На проверке' },
-        { value: 'needs_rework', label: 'На доработке' },
+        { value: 'needs_rework', label: 'Доработка' },
         { value: 'completed', label: 'Выполненные' },
       ],
       wishFilters: [
@@ -308,29 +261,17 @@ export default {
       editModal: false, editTarget: null, editForm: { title: '', reward: '', description: '' },
       delivering: null,
       balanceLogs: [], historyLoading: false,
-      chatMessages: [], chatLoading: false, chatInput: '',
+      chatMsgs: [], chatLoading: false, chatInput: '',
     }
   },
   computed: {
     user() { return useAuth().user.value },
     pendingTasks() { return this.tasks.filter(t => t.status === 'pending_review') },
     awaitingWishes() { return this.wishes.filter(w => w.status === 'awaiting_price') },
-    filteredTasks() {
-      if (!this.taskFilter) return this.tasks
-      return this.tasks.filter(t => t.status === this.taskFilter)
-    },
-    filteredWishes() {
-      if (!this.wishFilter) return this.wishes
-      return this.wishes.filter(w => w.status === this.wishFilter)
-    },
-    wishProgressCircle() {
-      if (!this.progress.wishes_total) return 0
-      return Math.round((this.progress.wishes_done / this.progress.wishes_total) * 100)
-    },
-    taskProgress() {
-      if (!this.progress.tasks_total) return 0
-      return Math.round((this.progress.tasks_done / this.progress.tasks_total) * 100)
-    }
+    filteredTasks() { return this.taskFilter ? this.tasks.filter(t => t.status === this.taskFilter) : this.tasks },
+    filteredWishes() { return this.wishFilter ? this.wishes.filter(w => w.status === this.wishFilter) : this.wishes },
+    wishProgressCircle() { return this.progress.wishes_total ? Math.round((this.progress.wishes_done / this.progress.wishes_total) * 100) : 0 },
+    taskProgress() { return this.progress.tasks_total ? Math.round((this.progress.tasks_done / this.progress.tasks_total) * 100) : 0 }
   },
   async mounted() {
     const { getChildren } = useApi()
@@ -342,12 +283,11 @@ export default {
   },
   methods: {
     async loadChat() {
-      this.view = 'chat'
-      this.chatLoading = true
+      this.view = 'chat'; this.chatLoading = true
       const { getFamilyChat } = useApi()
       try {
         const res = await getFamilyChat(this.selectedChild.child_id)
-        this.chatMessages = res.data.messages || []
+        this.chatMsgs = res.data.messages || []
         this.$nextTick(() => this.scrollChat())
       } finally { this.chatLoading = false }
     },
@@ -355,50 +295,29 @@ export default {
       if (!this.chatInput.trim()) return
       const { sendFamilyChat } = useApi()
       const res = await sendFamilyChat(this.selectedChild.child_id, this.chatInput.trim())
-      this.chatMessages.push(res.data.message)
+      this.chatMsgs.push(res.data.message)
       this.chatInput = ''
       this.$nextTick(() => this.scrollChat())
     },
-    scrollChat() {
-      const el = this.$refs.chatMessages
-      if (el) el.scrollTop = el.scrollHeight
-    },
+    scrollChat() { const el = this.$refs.chatMessages; if (el) el.scrollTop = el.scrollHeight },
     async loadHistory() {
-      this.view = 'history'
-      this.balanceLogs = []
-      this.historyLoading = true
+      this.view = 'history'; this.balanceLogs = []; this.historyLoading = true
       const { getChildBalanceLogs } = useApi()
-      try {
-        const res = await getChildBalanceLogs(this.selectedChild.child_id)
-        this.balanceLogs = res.data.logs || []
-      } finally { this.historyLoading = false }
+      try { const res = await getChildBalanceLogs(this.selectedChild.child_id); this.balanceLogs = res.data.logs || [] }
+      finally { this.historyLoading = false }
     },
-    formatDate(d) {
-      return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    },
+    formatDate(d) { return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) },
     async selectChild(child) {
-      this.selectedChild = child
-      this.balanceLogs = []
-      this.chatMessages = []
+      this.selectedChild = child; this.balanceLogs = []; this.chatMsgs = []
       if (this.view === 'history' || this.view === 'chat') this.view = 'overview'
       const { getWishes, getTasks } = useApi()
-      const [w, t] = await Promise.all([
-        getWishes(child.child_id),
-        getTasks({ child_id: child.child_id })
-      ])
-      this.wishes = w.data.wishes || []
-      this.tasks = t.data.tasks || []
-      this.progress = {
-        wishes_total: this.wishes.length,
-        wishes_done: this.wishes.filter(x => x.status === 'delivered').length,
-        tasks_total: this.tasks.length,
-        tasks_done: this.tasks.filter(x => x.status === 'completed').length
-      }
+      const [w, t] = await Promise.all([getWishes(child.child_id), getTasks({ child_id: child.child_id })])
+      this.wishes = w.data.wishes || []; this.tasks = t.data.tasks || []
+      this.progress = { wishes_total: this.wishes.length, wishes_done: this.wishes.filter(x => x.status === 'delivered').length, tasks_total: this.tasks.length, tasks_done: this.tasks.filter(x => x.status === 'completed').length }
     },
     async reload() {
       const { getChildren } = useApi()
-      const res = await getChildren()
-      this.children = res.data.children || []
+      const res = await getChildren(); this.children = res.data.children || []
       const updated = this.children.find(c => c.child_id === this.selectedChild.child_id)
       if (updated) this.selectedChild = updated
       await this.selectChild(this.selectedChild)
@@ -408,84 +327,26 @@ export default {
       if (w.status === 'purchased' || w.status === 'delivered') return 100
       return Math.min(100, Math.round((this.selectedChild.balance / w.price) * 100))
     },
-    ageLabel,
-    calcAge,
-    statusLabel(s) {
-      return { active: 'Активное', pending_review: 'На проверке', needs_rework: 'На доработке', completed: 'Выполнено' }[s] || s
-    },
-    wishStatusLabel(s) {
-      return { awaiting_price: 'Без цены', available: 'Доступно', purchased: 'Куплено', delivered: 'Доставлено' }[s] || s
-    },
-    async approve(task) {
-      const { approveTask } = useApi()
-      await approveTask(task.task_id)
-      await this.reload()
-    },
+    ageLabel, calcAge,
+    statusLabel(s) { return { active: 'Активное', pending_review: 'На проверке', needs_rework: 'На доработке', completed: 'Выполнено' }[s] || s },
+    wishStatusLabel(s) { return { awaiting_price: 'Без цены', available: 'Доступно', purchased: 'Куплено', delivered: 'Доставлено' }[s] || s },
+    async approve(task) { const { approveTask } = useApi(); await approveTask(task.task_id); await this.reload() },
     openReject(task) { this.rejectTarget = task; this.rejectComment = ''; this.rejectModal = true },
-    async confirmReject() {
-      const { rejectTask } = useApi()
-      await rejectTask(this.rejectTarget.task_id, this.rejectComment)
-      this.rejectModal = false
-      await this.reload()
-    },
-    async deleteTask(task) {
-      if (!confirm('Удалить задание?')) return
-      const { deleteTask } = useApi()
-      await deleteTask(task.task_id)
-      await this.reload()
-    },
-    openEdit(t) {
-      this.editTarget = t
-      this.editForm = { title: t.title, reward: t.reward, description: t.description || '' }
-      this.editModal = true
-    },
-    async saveEdit() {
-      const { updateTask } = useApi()
-      await updateTask(this.editTarget.task_id, {
-        title: this.editForm.title,
-        reward: this.editForm.reward,
-        description: this.editForm.description || undefined
-      })
-      this.editModal = false
-      await this.reload()
-    },
+    async confirmReject() { const { rejectTask } = useApi(); await rejectTask(this.rejectTarget.task_id, this.rejectComment); this.rejectModal = false; await this.reload() },
+    async deleteTask(task) { if (!confirm('Удалить задание?')) return; const { deleteTask } = useApi(); await deleteTask(task.task_id); await this.reload() },
+    openEdit(t) { this.editTarget = t; this.editForm = { title: t.title, reward: t.reward, description: t.description || '' }; this.editModal = true },
+    async saveEdit() { const { updateTask } = useApi(); await updateTask(this.editTarget.task_id, { title: this.editForm.title, reward: this.editForm.reward, description: this.editForm.description || undefined }); this.editModal = false; await this.reload() },
     async createTask() {
       if (!this.addForm.title || !this.addForm.reward) { this.addError = 'Заполните название и награду'; return }
       this.saving = true; this.addError = ''
       const { createTask } = useApi()
-      try {
-        await createTask({
-          title: this.addForm.title,
-          child_id: this.selectedChild.child_id,
-          reward: this.addForm.reward,
-          description: this.addForm.description || undefined
-        })
-        this.showAddTask = false
-        this.addForm = { title: '', reward: '', description: '' }
-        await this.reload()
-      } catch (e) { this.addError = e.response?.data?.error?.message || 'Ошибка' }
+      try { await createTask({ title: this.addForm.title, child_id: this.selectedChild.child_id, reward: this.addForm.reward, description: this.addForm.description || undefined }); this.showAddTask = false; this.addForm = { title: '', reward: '', description: '' }; await this.reload() }
+      catch (e) { this.addError = e.response?.data?.error?.message || 'Ошибка' }
       finally { this.saving = false }
     },
-    async setPrice(wish) {
-      const price = this.priceInputs[wish.wish_id]
-      if (!price || price <= 0) return
-      const { updateWish } = useApi()
-      await updateWish(this.selectedChild.child_id, wish.wish_id, { price })
-      await this.reload()
-    },
-    async deliver(wish) {
-      this.delivering = wish.wish_id
-      const { deliverWish } = useApi()
-      try { await deliverWish(this.selectedChild.child_id, wish.wish_id); await this.reload() }
-      catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') }
-      finally { this.delivering = null }
-    },
-    async deleteWish(wish) {
-      if (!confirm('Удалить цель?')) return
-      const { deleteWish } = useApi()
-      await deleteWish(this.selectedChild.child_id, wish.wish_id)
-      await this.reload()
-    }
+    async setPrice(wish) { const price = this.priceInputs[wish.wish_id]; if (!price || price <= 0) return; const { updateWish } = useApi(); await updateWish(this.selectedChild.child_id, wish.wish_id, { price }); await this.reload() },
+    async deliver(wish) { this.delivering = wish.wish_id; const { deliverWish } = useApi(); try { await deliverWish(this.selectedChild.child_id, wish.wish_id); await this.reload() } catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') } finally { this.delivering = null } },
+    async deleteWish(wish) { if (!confirm('Удалить цель?')) return; const { deleteWish } = useApi(); await deleteWish(this.selectedChild.child_id, wish.wish_id); await this.reload() }
   }
 }
 </script>
@@ -494,38 +355,45 @@ export default {
 .loading { text-align: center; padding: 60px; color: #888; }
 .greeting { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
 .no-child { text-align: center; padding: 60px 20px; color: #888; }
+.no-child__icon { font-size: 48px; margin-bottom: 12px; }
 .no-child p { margin-bottom: 16px; font-size: 16px; }
-.btn-primary { padding: 12px 24px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-primary { padding: 12px 24px; background: #4f7ef7; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
 .child-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-.tab { padding: 8px 18px; border-radius: 20px; border: 2px solid #4f7ef7; background: transparent; color: #4f7ef7; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+.tab { padding: 8px 18px; border-radius: 20px; border: 2px solid #4f7ef7; background: transparent; color: #4f7ef7; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
 .tab--active { background: #4f7ef7; color: #fff; }
+.tab-avatar-wrap { width: 20px; height: 20px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tab-avatar { width: 100%; height: 100%; object-fit: cover; }
 
-.balance-card { background: #fff; border-radius: 16px; padding: 18px 20px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.balance-label { font-size: 15px; color: #555; font-weight: 600; }
-.balance-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
-.balance-value { font-size: 28px; font-weight: 800; color: #4f7ef7; }
+.balance-card { background: #fff; border-radius: 16px; padding: 16px 20px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.balance-avatar { width: 44px; height: 44px; border-radius: 50%; background: #4f7ef7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.balance-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.balance-avatar-letter { font-size: 20px; font-weight: 700; color: #fff; }
+.balance-info { flex: 1; }
+.balance-label { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+.balance-meta { font-size: 12px; color: #aaa; }
+.balance-value { font-size: 26px; font-weight: 800; color: #4f7ef7; }
 
 .progress-row { display: flex; gap: 12px; margin-bottom: 16px; }
-.progress-item { background: #fff; border-radius: 14px; padding: 16px; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.progress-item { background: #fff; border-radius: 14px; padding: 14px; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .progress-circle { position: relative; width: 52px; height: 52px; }
 .progress-circle svg { width: 100%; height: 100%; }
 .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 10px; font-weight: 700; color: #333; }
 .progress-label { font-size: 12px; color: #666; }
 
-.view-tabs { display: flex; background: #eef1ff; border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 16px; }
-.vtab { flex: 1; padding: 9px; border: none; background: transparent; color: #666; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.15s; font-family: inherit; }
+.view-tabs { display: flex; background: #eef1ff; border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.vtab { flex: 1; padding: 9px 8px; border: none; background: transparent; color: #666; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.15s; font-family: inherit; white-space: nowrap; min-width: 60px; }
 .vtab--active { background: #fff; color: #4f7ef7; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
 .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.chip { padding: 5px 12px; border-radius: 16px; border: 1.5px solid #d0d8ff; background: #fff; color: #4f7ef7; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.chip { padding: 5px 11px; border-radius: 16px; border: 1.5px solid #d0d8ff; background: #fff; color: #4f7ef7; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: inherit; }
 .chip--active { background: #4f7ef7; color: #fff; border-color: #4f7ef7; }
 
 .add-task-row { margin-bottom: 12px; }
-.btn-add { padding: 9px 18px; background: #f0f4ff; border: 2px dashed #4f7ef7; border-radius: 10px; color: #4f7ef7; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-add { padding: 9px 18px; background: #f0f4ff; border: 2px dashed #4f7ef7; border-radius: 10px; color: #4f7ef7; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
-.section { background: #fff; border-radius: 16px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #333; }
+.section { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.section-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #333; }
 .empty { color: #bbb; font-size: 14px; text-align: center; padding: 20px; }
 
 .task-card { display: flex; align-items: flex-start; justify-content: space-between; padding: 12px 14px; background: #f8f9ff; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid #e0e0e0; gap: 8px; }
@@ -533,14 +401,14 @@ export default {
 .task-card--pending_review { border-left-color: #f59e0b; }
 .task-card--needs_rework { border-left-color: #e53e3e; }
 .task-card--completed { border-left-color: #22c55e; opacity: 0.75; }
-.task-card__info { flex: 1; }
+.task-card__info { flex: 1; min-width: 0; }
 .task-card__title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
 .task-card__comment { font-size: 12px; color: #888; margin-top: 2px; }
 .task-card__rework { font-size: 12px; color: #e53e3e; margin-top: 4px; }
 .task-card__status-label { font-size: 11px; color: #aaa; margin-top: 4px; }
-.task-card__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.reward-badge { background: #fff8e1; color: #d97706; border-radius: 12px; padding: 3px 10px; font-size: 13px; font-weight: 700; }
-.icon-btn { width: 30px; height: 30px; border-radius: 8px; border: none; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.task-card__actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.reward-badge { background: #fff8e1; color: #d97706; border-radius: 12px; padding: 3px 8px; font-size: 12px; font-weight: 700; }
+.icon-btn { width: 30px; height: 30px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; }
 .icon-btn--approve { background: #dcfce7; color: #16a34a; }
 .icon-btn--reject { background: #fee2e2; color: #dc2626; }
 .icon-btn--edit { background: #e0f2fe; color: #0284c7; }
@@ -549,17 +417,16 @@ export default {
 .wish-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 .wish-card--full { padding: 16px; }
 .wish-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
-.wish-card__info { flex: 1; }
+.wish-card__info { flex: 1; min-width: 0; }
 .wish-card__title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
 .wish-card__desc { font-size: 12px; color: #888; margin-top: 2px; }
-.wish-card__status-col { flex-shrink: 0; }
-.wish-status { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+.wish-status { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; flex-shrink: 0; }
 .wish-status--awaiting_price { background: #fef9c3; color: #ca8a04; }
 .wish-status--available { background: #dcfce7; color: #16a34a; }
 .wish-status--purchased { background: #dbeafe; color: #2563eb; }
 .wish-status--delivered { background: #f3e8ff; color: #7c3aed; }
 
-.wish-steps { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.wish-steps { display: flex; align-items: center; gap: 5px; font-size: 11px; margin-bottom: 10px; flex-wrap: wrap; }
 .step { color: #ccc; }
 .step--done { color: #4f7ef7; font-weight: 600; }
 .arrow { color: #ddd; }
@@ -567,60 +434,70 @@ export default {
 .wish-progress-bar { height: 6px; background: #e8e8e8; border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
 .wish-progress-fill { height: 100%; background: linear-gradient(90deg, #4f7ef7, #818cf8); border-radius: 4px; transition: width 0.3s; }
 
-.wish-card__actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.wish-card__actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .wish-card__price-row { display: flex; gap: 8px; align-items: center; flex: 1; }
 .price-set-row { display: flex; gap: 8px; align-items: center; }
-.price-input { width: 100px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
+.price-input { width: 100px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
 .price-input:focus { border-color: #4f7ef7; }
-.btn-small { padding: 6px 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-small { padding: 6px 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .wish-price-display { font-size: 15px; font-weight: 700; color: #f59e0b; }
 .wish-btns { display: flex; align-items: center; gap: 6px; }
-.btn-deliver { padding: 6px 14px; background: #f3e8ff; color: #7c3aed; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-deliver { padding: 6px 14px; background: #f3e8ff; color: #7c3aed; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 300; }
-.modal { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 360px; }
+.chat-wrap { display: flex; flex-direction: column; height: 440px; background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat-empty { text-align: center; color: #bbb; font-size: 14px; margin: auto; }
+.chat-bubble { max-width: 75%; display: flex; flex-direction: column; gap: 2px; }
+.chat-bubble--parent { align-self: flex-end; align-items: flex-end; }
+.chat-bubble--child { align-self: flex-start; align-items: flex-start; }
+.chat-bubble__name { font-size: 11px; color: #aaa; font-weight: 600; }
+.chat-bubble__body { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+.chat-bubble--parent .chat-bubble__body { background: #4f7ef7; color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble--child .chat-bubble__body { background: #f0f4ff; color: #1a1a1a; border-bottom-left-radius: 4px; }
+.chat-bubble__time { font-size: 10px; color: #bbb; }
+.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #f0f0f0; }
+.chat-input { flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; font-family: inherit; }
+.chat-input:focus { border-color: #4f7ef7; }
+.chat-send-btn { width: 40px; height: 40px; border-radius: 50%; background: #4f7ef7; color: #fff; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+.chat-send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+
+.log-item { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.log-item--plus { border-left: 4px solid #22c55e; }
+.log-item--minus { border-left: 4px solid #4f7ef7; }
+.log-icon { font-size: 20px; flex-shrink: 0; }
+.log-info { flex: 1; min-width: 0; }
+.log-reason { font-size: 13px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-date { font-size: 11px; color: #aaa; margin-top: 2px; }
+.log-delta { font-size: 15px; font-weight: 800; flex-shrink: 0; }
+.log-item--plus .log-delta { color: #22c55e; }
+.log-item--minus .log-delta { color: #4f7ef7; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 300; padding: 0; }
+.modal { background: #fff; border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
 .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; text-align: center; }
 .modal-textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; resize: vertical; box-sizing: border-box; }
 .modal-textarea:focus { border-color: #4f7ef7; }
 .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-.btn-outline { flex: 1; padding: 10px; border: 1.5px solid #ddd; background: #fff; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: #666; }
-.btn-primary-sm { flex: 1; padding: 10px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-.btn-primary-sm:hover:not(:disabled) { background: #3a6be0; }
+.btn-outline { flex: 1; padding: 12px; border: 1.5px solid #ddd; background: #fff; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; color: #666; font-family: inherit; }
+.btn-primary-sm { flex: 1; padding: 12px; background: #4f7ef7; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .btn-primary-sm:disabled { opacity: 0.6; cursor: not-allowed; }
 .field { margin-bottom: 12px; }
 .field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
-.field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; }
+.field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; font-family: inherit; }
 .field input:focus { border-color: #4f7ef7; }
 .error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 10px; }
-.log-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.log-item--plus { border-left: 4px solid #22c55e; }
-.log-item--minus { border-left: 4px solid #4f7ef7; }
-.log-icon { font-size: 22px; flex-shrink: 0; }
-.log-info { flex: 1; min-width: 0; }
-.log-reason { font-size: 14px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.log-date { font-size: 12px; color: #aaa; margin-top: 2px; }
-.log-delta { font-size: 16px; font-weight: 800; flex-shrink: 0; }
-.log-item--plus .log-delta { color: #22c55e; }
-.log-item--minus .log-delta { color: #4f7ef7; }
-.tab-avatar-wrap { display: inline-block; width: 20px; height: 20px; border-radius: 50%; overflow: hidden; vertical-align: middle; margin-right: 5px; flex-shrink: 0; }
-.tab-avatar { width: 100%; height: 100%; object-fit: cover; }
-.balance-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #4f7ef7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.balance-avatar-img { width: 100%; height: 100%; object-fit: cover; }
-.balance-avatar-letter { font-size: 20px; font-weight: 700; color: #fff; }
-.chat-wrap { display: flex; flex-direction: column; height: 480px; background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
-.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.chat-empty { text-align: center; color: #bbb; font-size: 14px; margin: auto; }
-.chat-bubble { max-width: 70%; display: flex; flex-direction: column; gap: 2px; }
-.chat-bubble--parent { align-self: flex-end; align-items: flex-end; }
-.chat-bubble--child { align-self: flex-start; align-items: flex-start; }
-.chat-bubble__name { font-size: 11px; color: #aaa; font-weight: 600; margin-bottom: 2px; }
-.chat-bubble__body { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
-.chat-bubble--parent .chat-bubble__body { background: #4f7ef7; color: #fff; border-bottom-right-radius: 4px; }
-.chat-bubble--child .chat-bubble__body { background: #f0f4ff; color: #1a1a1a; border-bottom-left-radius: 4px; }
-.chat-bubble__time { font-size: 10px; color: #bbb; margin-top: 2px; }
-.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #f0f0f0; background: #fff; }
-.chat-input { flex: 1; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; font-family: inherit; }
-.chat-input:focus { border-color: #4f7ef7; }
-.chat-send-btn { width: 40px; height: 40px; border-radius: 50%; background: #4f7ef7; color: #fff; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.chat-send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+
+@media (min-width: 600px) {
+  .modal-overlay { align-items: center; padding: 16px; }
+  .modal { border-radius: 16px; max-width: 400px; }
+}
+
+@media (max-width: 480px) {
+  .greeting { font-size: 20px; }
+  .balance-value { font-size: 22px; }
+  .view-tabs { gap: 2px; }
+  .vtab { font-size: 12px; padding: 8px 6px; min-width: 50px; }
+  .task-card__actions { gap: 4px; }
+  .chat-wrap { height: 380px; }
+}
 </style>

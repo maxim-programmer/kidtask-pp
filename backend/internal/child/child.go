@@ -27,6 +27,7 @@ type Child struct {
 	AgeGroup     string     `json:"age_group"`
 	Birthday     *time.Time `json:"birthday,omitempty"`
 	AvatarURL    *string    `json:"avatar_url,omitempty"`
+	IsBlocked    bool       `json:"is_blocked"`
 }
 
 type Progress struct {
@@ -76,9 +77,9 @@ func (s *Storage) Create(ctx context.Context, c *Child) error {
 func (s *Storage) GetByID(ctx context.Context, id string) (*Child, error) {
 	c := &Child{}
 	err := s.db.QueryRow(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url, is_blocked
 		 FROM children WHERE child_id = $1`, id,
-	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL)
+	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL, &c.IsBlocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -88,9 +89,9 @@ func (s *Storage) GetByID(ctx context.Context, id string) (*Child, error) {
 func (s *Storage) GetByUsername(ctx context.Context, username string) (*Child, error) {
 	c := &Child{}
 	err := s.db.QueryRow(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url, is_blocked
 		 FROM children WHERE username = $1`, username,
-	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL)
+	).Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL, &c.IsBlocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -99,7 +100,7 @@ func (s *Storage) GetByUsername(ctx context.Context, username string) (*Child, e
 
 func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, error) {
 	rows, err := s.db.Query(ctx,
-		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url
+		`SELECT child_id, parent_id, username, password_hash, name, balance, age_group, birthday, avatar_url, is_blocked
 		 FROM children WHERE parent_id = $1`, parentID,
 	)
 	if err != nil {
@@ -110,7 +111,7 @@ func (s *Storage) ListByParent(ctx context.Context, parentID string) ([]*Child, 
 	var children []*Child
 	for rows.Next() {
 		c := &Child{}
-		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL); err != nil {
+		if err := rows.Scan(&c.ChildID, &c.ParentID, &c.Username, &c.PasswordHash, &c.Name, &c.Balance, &c.AgeGroup, &c.Birthday, &c.AvatarURL, &c.IsBlocked); err != nil {
 			return nil, err
 		}
 		children = append(children, c)
@@ -306,6 +307,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.IsBlocked {
+		respond.Error(w, http.StatusForbidden, "USER_BLOCKED", "user is blocked by administrator")
+		return
+	}
+
 	token, err := auth.GenerateToken(c.ChildID, "child", c.ParentID, h.jwtSecret)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
@@ -498,6 +504,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	respond.JSON(w, http.StatusOK, map[string]any{"message": "child deleted"})
 }
+
 func (h *Handler) GetBalanceLogs(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetClaims(r)
 	logs, err := h.storage.GetBalanceLogs(r.Context(), claims.UserID)

@@ -18,22 +18,14 @@
         <div class="progress-row">
           <div class="progress-item">
             <div class="circle-wrap">
-              <svg viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="15" fill="none" stroke="#374151" stroke-width="3"/>
-                <circle cx="18" cy="18" r="15" fill="none" stroke="#6366f1" stroke-width="3"
-                  :stroke-dasharray="`${wishPct} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
-              </svg>
+              <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#374151" stroke-width="3"/><circle cx="18" cy="18" r="15" fill="none" stroke="#6366f1" stroke-width="3" :stroke-dasharray="`${wishPct} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/></svg>
               <span class="circle-text">{{ wishDone }}/{{ wishTotal }}</span>
             </div>
             <span class="progress-label">Целей</span>
           </div>
           <div class="progress-item">
             <div class="circle-wrap">
-              <svg viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="15" fill="none" stroke="#374151" stroke-width="3"/>
-                <circle cx="18" cy="18" r="15" fill="none" stroke="#6366f1" stroke-width="3"
-                  :stroke-dasharray="`${taskPct} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/>
-              </svg>
+              <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#374151" stroke-width="3"/><circle cx="18" cy="18" r="15" fill="none" stroke="#6366f1" stroke-width="3" :stroke-dasharray="`${taskPct} 100`" stroke-linecap="round" transform="rotate(-90 18 18)"/></svg>
               <span class="circle-text">{{ taskDone }}/{{ taskTotal }}</span>
             </div>
             <span class="progress-label">Заданий</span>
@@ -43,9 +35,7 @@
 
       <div v-if="view === 'tasks'">
         <div class="filter-bar">
-          <button v-for="f in taskFilters" :key="f.value"
-            :class="['chip', { 'chip--active': taskFilter === f.value }]"
-            @click="taskFilter = f.value">{{ f.label }}</button>
+          <button v-for="f in taskFilters" :key="f.value" :class="['chip', { 'chip--active': taskFilter === f.value }]" @click="taskFilter = f.value">{{ f.label }}</button>
         </div>
         <div v-if="filteredTasks.length === 0" class="empty">Нет заданий</div>
         <div v-for="t in filteredTasks" :key="t.task_id" :class="['task-card', `task-card--${t.status}`]">
@@ -58,13 +48,7 @@
           </div>
           <div class="task-card__footer">
             <span class="reward">⭐ {{ t.reward }}</span>
-            <button
-              v-if="t.status === 'active' || t.status === 'needs_rework'"
-              class="done-btn"
-              @click="submit(t)"
-              :disabled="submitting === t.task_id">
-              {{ submitting === t.task_id ? '...' : '✓ Сдать' }}
-            </button>
+            <button v-if="t.status === 'active' || t.status === 'needs_rework'" class="done-btn" @click="submit(t)" :disabled="submitting === t.task_id">{{ submitting === t.task_id ? '...' : '✓ Сдать' }}</button>
             <span v-else-if="t.status === 'pending_review'" class="badge badge--pending">На проверке</span>
             <span v-else-if="t.status === 'completed'" class="badge badge--done">Выполнено</span>
           </div>
@@ -79,9 +63,7 @@
               <div class="wish-title">{{ w.title }}</div>
               <div class="wish-desc" v-if="w.description">{{ w.description }}</div>
             </div>
-            <div class="wish-price-col">
-              <span class="wish-price">⭐ {{ w.price ?? '?' }}</span>
-            </div>
+            <span class="wish-price">⭐ {{ w.price ?? '?' }}</span>
           </div>
           <div class="steps">
             <span class="step step--done">⭐ Создано</span>
@@ -94,11 +76,7 @@
             <div class="progress-fill" :style="{ width: wishProgress(w) + '%' }"></div>
           </div>
           <div class="wish-actions">
-            <button
-              v-if="w.status === 'available'"
-              class="buy-btn"
-              @click="purchase(w)"
-              :disabled="(user?.balance || 0) < w.price || buying === w.wish_id">
+            <button v-if="w.status === 'available'" class="buy-btn" @click="purchase(w)" :disabled="(user?.balance || 0) < w.price || buying === w.wish_id">
               {{ (user?.balance || 0) >= (w.price || Infinity) ? '🛒 Купить' : `Нужно ещё ⭐${w.price - (user?.balance || 0)}` }}
             </button>
             <span v-else-if="w.status === 'purchased'" class="badge badge--bought">🛒 Куплено</span>
@@ -109,7 +87,6 @@
         </div>
         <button class="add-btn" @click="showModal = true">+ Добавить цель</button>
       </div>
-    </div>
 
       <div v-if="view === 'history'">
         <div v-if="historyLoading" class="loading">Загрузка...</div>
@@ -127,32 +104,26 @@
       <div v-if="view === 'chat'" class="chat-wrap">
         <div class="chat-messages" ref="chatMessages">
           <div v-if="chatLoading" class="chat-empty">Загрузка...</div>
-          <div v-else-if="chatMessages.length === 0" class="chat-empty">Напиши что-нибудь родителю 💬</div>
-          <div v-for="m in chatMessages" :key="m.message_id"
-            :class="['chat-bubble', m.from_child ? 'chat-bubble--me' : 'chat-bubble--parent']">
+          <div v-else-if="chatMsgs.length === 0" class="chat-empty">Напишите родителю 💬</div>
+          <div v-for="m in chatMsgs" :key="m.message_id" :class="['chat-bubble', m.from_child ? 'chat-bubble--me' : 'chat-bubble--parent']">
             <div class="chat-bubble__name">{{ m.from_child ? 'Я' : 'Родитель' }}</div>
             <div class="chat-bubble__body">{{ m.body }}</div>
             <div class="chat-bubble__time">{{ formatDate(m.created_at) }}</div>
           </div>
         </div>
         <div class="chat-input-row">
-          <input v-model="chatInput" type="text" placeholder="Написать сообщение..."
-            class="chat-input" @keyup.enter="sendChat" />
+          <input v-model="chatInput" type="text" placeholder="Написать сообщение..." class="chat-input" @keyup.enter="sendChat" />
           <button class="chat-send-btn" @click="sendChat" :disabled="!chatInput.trim()">➤</button>
         </div>
       </div>
+    </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
       <div class="modal">
+        <div class="modal__handle"></div>
         <h3>Новая цель</h3>
-        <div class="field">
-          <label>Название</label>
-          <input v-model="form.title" type="text" placeholder="iPhone 16" />
-        </div>
-        <div class="field">
-          <label>Описание</label>
-          <textarea v-model="form.description" rows="2" class="form-textarea" placeholder="Зачем мне это нужно..."></textarea>
-        </div>
+        <div class="field"><label>Название</label><input v-model="form.title" type="text" placeholder="iPhone 16" /></div>
+        <div class="field"><label>Описание</label><textarea v-model="form.description" rows="2" class="form-textarea" placeholder="Зачем мне это нужно..."></textarea></div>
         <div v-if="wishError" class="error-msg">{{ wishError }}</div>
         <div class="modal-actions">
           <button class="btn-cancel" @click="showModal = false">Отмена</button>
@@ -173,31 +144,18 @@ export default {
   data() {
     return {
       loading: true, tasks: [], wishes: [], user: null,
-      view: 'progress',
-      taskFilter: '',
-      taskFilters: [
-        { value: '', label: 'Все' },
-        { value: 'active', label: 'Активные' },
-        { value: 'pending_review', label: 'На проверке' },
-        { value: 'needs_rework', label: 'На доработке' },
-        { value: 'completed', label: 'Завершённые' },
-      ],
+      view: 'progress', taskFilter: '',
+      taskFilters: [{ value: '', label: 'Все' }, { value: 'active', label: 'Активные' }, { value: 'pending_review', label: 'На проверке' }, { value: 'needs_rework', label: 'Доработка' }, { value: 'completed', label: 'Завершённые' }],
       submitting: null, buying: null,
       showModal: false, saving: false, wishError: '',
       form: { title: '', description: '' },
       balanceLogs: [], historyLoading: false,
-      chatMessages: [], chatLoading: false, chatInput: '',
+      chatMsgs: [], chatLoading: false, chatInput: '',
     }
   },
   computed: {
-    childId() {
-      const u = useAuth().user.value
-      return u?.child_id || u?.user_id || u?.id
-    },
-    filteredTasks() {
-      if (!this.taskFilter) return this.tasks
-      return this.tasks.filter(t => t.status === this.taskFilter)
-    },
+    childId() { const u = useAuth().user.value; return u?.child_id || u?.user_id || u?.id },
+    filteredTasks() { return this.taskFilter ? this.tasks.filter(t => t.status === this.taskFilter) : this.tasks },
     wishDone() { return this.wishes.filter(w => w.status === 'delivered').length },
     wishTotal() { return this.wishes.length },
     taskDone() { return this.tasks.filter(t => t.status === 'completed').length },
@@ -213,90 +171,56 @@ export default {
       this.loading = true
       try {
         const childId = authUser?.child_id || authUser?.user_id || authUser?.id
-        const [me, tr, wr] = await Promise.all([
-          getMe(),
-          getTasks(),
-          getWishes(childId).catch(() => ({ data: { wishes: [] } }))
-        ])
-        this.user = me.data.user
-        this.tasks = tr.data.tasks || []
-        this.wishes = wr.data.wishes || []
-      } catch {
-        this.user = authUser
-        const tr = await getTasks().catch(() => ({ data: { tasks: [] } }))
-        this.tasks = tr.data.tasks || []
-      } finally { this.loading = false }
+        const [me, tr, wr] = await Promise.all([getMe(), getTasks(), getWishes(childId).catch(() => ({ data: { wishes: [] } }))])
+        this.user = me.data.user; this.tasks = tr.data.tasks || []; this.wishes = wr.data.wishes || []
+      } catch { this.user = authUser; const tr = await getTasks().catch(() => ({ data: { tasks: [] } })); this.tasks = tr.data.tasks || [] }
+      finally { this.loading = false }
     },
     wishProgress(w) {
       if (!w.price) return 0
       if (w.status === 'purchased' || w.status === 'delivered') return 100
       return Math.min(100, Math.round(((this.user?.balance || 0) / w.price) * 100))
     },
-    async submit(task) {
-      if (task.status !== 'active' && task.status !== 'needs_rework') return
-      this.submitting = task.task_id
-      const { submitTask } = useApi()
-      try { await submitTask(task.task_id); await this.load() }
-      catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') }
-      finally { this.submitting = null }
-    },
+    async submit(task) { this.submitting = task.task_id; const { submitTask } = useApi(); try { await submitTask(task.task_id); await this.load() } catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') } finally { this.submitting = null } },
     async purchase(wish) {
       this.buying = wish.wish_id
-      const { purchaseWish } = useApi()
-      try { await purchaseWish(this.childId, wish.wish_id); await this.load() }
-      catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') }
+      const { purchaseWish, getMe } = useApi()
+      const { updateBalance } = useAuth()
+      try {
+        await purchaseWish(this.childId, wish.wish_id)
+        const me = await getMe()
+        updateBalance(me.data.user.balance)
+        await this.load()
+      } catch (e) { alert(e.response?.data?.error?.message || 'Ошибка') }
       finally { this.buying = null }
     },
-    async removeWish(wish) {
-      if (!confirm('Удалить цель?')) return
-      const { deleteWish } = useApi()
-      await deleteWish(this.childId, wish.wish_id)
-      await this.load()
-    },
+    async removeWish(wish) { if (!confirm('Удалить цель?')) return; const { deleteWish } = useApi(); await deleteWish(this.childId, wish.wish_id); await this.load() },
     async loadHistory() {
       this.view = 'history'
       if (this.balanceLogs.length) return
       this.historyLoading = true
       const { getMyBalanceLogs } = useApi()
-      try {
-        const res = await getMyBalanceLogs()
-        this.balanceLogs = res.data.logs || []
-      } finally { this.historyLoading = false }
-    },
-    formatDate(d) {
-      return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      try { const res = await getMyBalanceLogs(); this.balanceLogs = res.data.logs || [] } finally { this.historyLoading = false }
     },
     async loadChat() {
-      this.view = 'chat'
-      this.chatLoading = true
+      this.view = 'chat'; this.chatLoading = true
       const { getMyChat } = useApi()
-      try {
-        const res = await getMyChat()
-        this.chatMessages = res.data.messages || []
-        this.$nextTick(() => this.scrollChat())
-      } finally { this.chatLoading = false }
+      try { const res = await getMyChat(); this.chatMsgs = res.data.messages || []; this.$nextTick(() => this.scrollChat()) } finally { this.chatLoading = false }
     },
     async sendChat() {
       if (!this.chatInput.trim()) return
       const { sendMyChat } = useApi()
       const res = await sendMyChat(this.chatInput.trim())
-      this.chatMessages.push(res.data.message)
-      this.chatInput = ''
+      this.chatMsgs.push(res.data.message); this.chatInput = ''
       this.$nextTick(() => this.scrollChat())
     },
-    scrollChat() {
-      const el = this.$refs.chatMessages
-      if (el) el.scrollTop = el.scrollHeight
-    },
+    scrollChat() { const el = this.$refs.chatMessages; if (el) el.scrollTop = el.scrollHeight },
+    formatDate(d) { return new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) },
     async addWish() {
       this.saving = true; this.wishError = ''
       const { createWish } = useApi()
-      try {
-        await createWish(this.childId, { title: this.form.title, description: this.form.description || undefined })
-        this.showModal = false
-        this.form = { title: '', description: '' }
-        await this.load()
-      } catch (e) { this.wishError = e.response?.data?.error?.message || 'Ошибка' }
+      try { await createWish(this.childId, { title: this.form.title, description: this.form.description || undefined }); this.showModal = false; this.form = { title: '', description: '' }; await this.load() }
+      catch (e) { this.wishError = e.response?.data?.error?.message || 'Ошибка' }
       finally { this.saving = false }
     }
   }
@@ -306,23 +230,23 @@ export default {
 <style scoped>
 .loading { text-align: center; padding: 60px; color: #6366f1; }
 
-.view-tabs { display: flex; gap: 4px; background: #1f2937; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-.tab { flex: 1; padding: 10px; border: none; background: transparent; color: #9ca3af; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.15s; font-family: inherit; }
+.view-tabs { display: flex; gap: 4px; background: #1f2937; border-radius: 12px; padding: 4px; margin-bottom: 18px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tab { flex: 1; padding: 10px 6px; border: none; background: transparent; color: #9ca3af; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.15s; font-family: inherit; white-space: nowrap; min-width: 56px; }
 .tab--active { background: #374151; color: #e5e7eb; }
 
-.balance-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 16px; padding: 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.balance-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 16px; padding: 20px 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
 .balance-label { font-size: 14px; color: rgba(255,255,255,0.75); font-weight: 500; }
 .balance-value { font-size: 30px; font-weight: 900; color: #fff; }
 
 .progress-row { display: flex; gap: 12px; }
-.progress-item { background: #1f2937; border-radius: 14px; padding: 20px; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid #374151; }
+.progress-item { background: #1f2937; border-radius: 14px; padding: 18px; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid #374151; }
 .circle-wrap { position: relative; width: 72px; height: 72px; }
 .circle-wrap svg { width: 100%; height: 100%; }
 .circle-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 12px; font-weight: 700; color: #a5b4fc; }
 .progress-label { font-size: 14px; color: #9ca3af; font-weight: 500; }
 
-.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.chip { padding: 5px 12px; border-radius: 16px; border: 1px solid #374151; background: transparent; color: #9ca3af; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+.chip { padding: 5px 12px; border-radius: 16px; border: 1px solid #374151; background: transparent; color: #9ca3af; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; white-space: nowrap; }
 .chip--active { background: #6366f1; color: #fff; border-color: #6366f1; }
 
 .empty { text-align: center; color: #6b7280; font-size: 15px; padding: 40px; }
@@ -332,83 +256,89 @@ export default {
 .task-card--pending_review { border-left-color: #f59e0b; }
 .task-card--needs_rework { border-left-color: #ef4444; }
 .task-card--completed { border-left-color: #22c55e; opacity: 0.7; }
-.task-card__header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-.task-card__left { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.task-card__header { margin-bottom: 10px; }
+.task-card__left { display: flex; flex-direction: column; gap: 3px; }
 .task-title { font-size: 15px; font-weight: 700; color: #f3f4f6; }
 .task-desc { font-size: 13px; color: #6b7280; }
 .task-rework { font-size: 12px; color: #f87171; }
 .task-card__footer { display: flex; align-items: center; justify-content: space-between; }
 .reward { font-size: 16px; font-weight: 700; color: #a5b4fc; }
-.done-btn { padding: 8px 18px; background: #22c55e; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.done-btn:hover:not(:disabled) { background: #16a34a; }
+.done-btn { padding: 9px 18px; background: #22c55e; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .done-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.badge { padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.badge { padding: 7px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; }
 .badge--pending { background: #78350f30; color: #fbbf24; }
 .badge--done { background: #14532d30; color: #4ade80; }
 
 .wish-card { background: #1f2937; border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1px solid #374151; }
-.wish-card__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-.wish-info { flex: 1; }
-.wish-title { font-size: 16px; font-weight: 700; color: #f3f4f6; margin-bottom: 4px; }
+.wish-card__top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
+.wish-info { flex: 1; min-width: 0; }
+.wish-title { font-size: 15px; font-weight: 700; color: #f3f4f6; margin-bottom: 4px; }
 .wish-desc { font-size: 13px; color: #6b7280; }
-.wish-price-col { margin-left: 12px; }
-.wish-price { font-size: 20px; font-weight: 800; color: #a5b4fc; }
-.steps { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-.step { font-size: 12px; color: #4b5563; font-weight: 600; }
+.wish-price { font-size: 18px; font-weight: 800; color: #a5b4fc; flex-shrink: 0; }
+.steps { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+.step { font-size: 11px; color: #4b5563; font-weight: 600; }
 .step--done { color: #a5b4fc; }
-.step-arrow { color: #374151; }
+.step-arrow { color: #374151; font-size: 11px; }
 .progress-bar { height: 6px; background: #374151; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
 .progress-fill { height: 100%; background: #6366f1; border-radius: 3px; transition: width 0.4s; }
 .wish-actions { display: flex; gap: 8px; align-items: center; }
-.buy-btn { flex: 1; padding: 10px 16px; background: #22c55e; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.buy-btn:hover:not(:disabled) { background: #16a34a; }
+.buy-btn { flex: 1; padding: 10px 14px; background: #22c55e; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .buy-btn:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
 .badge--bought { background: #78350f30; color: #fbbf24; }
 .badge--wait { background: #1e1b4b; color: #818cf8; }
-.del-btn { background: transparent; border: 1px solid #374151; border-radius: 8px; padding: 6px 10px; color: #6b7280; font-size: 14px; cursor: pointer; font-family: inherit; }
+.del-btn { background: transparent; border: 1px solid #374151; border-radius: 8px; padding: 8px 10px; color: #6b7280; font-size: 14px; cursor: pointer; font-family: inherit; }
 .del-btn:hover { background: #ef444420; color: #ef4444; border-color: #ef4444; }
 
-.add-btn { width: 100%; padding: 13px; background: transparent; border: 1px dashed #4b5563; border-radius: 12px; color: #6b7280; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; transition: all 0.15s; }
+.add-btn { width: 100%; padding: 13px; background: transparent; border: 1px dashed #4b5563; border-radius: 12px; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; transition: all 0.15s; }
 .add-btn:hover { border-color: #6366f1; color: #a5b4fc; }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 300; }
-.modal { background: #1f2937; border: 1px solid #374151; border-radius: 14px; padding: 24px; width: 90%; max-width: 360px; }
-.modal h3 { font-size: 18px; font-weight: 700; color: #e5e7eb; margin-bottom: 16px; }
-.field { margin-bottom: 14px; }
-.field label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
-.field input, .form-textarea { width: 100%; padding: 10px 12px; background: #111827; border: 1px solid #374151; border-radius: 10px; font-size: 15px; color: #e5e7eb; outline: none; font-family: inherit; }
-.field input:focus, .form-textarea:focus { border-color: #6366f1; }
-.form-textarea { resize: vertical; }
-.error-msg { color: #f87171; font-size: 13px; margin-bottom: 10px; }
-.modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
-.btn-cancel { padding: 10px 18px; background: transparent; border: 1px solid #374151; border-radius: 8px; color: #9ca3af; font-size: 14px; cursor: pointer; font-family: inherit; }
-.btn-primary { padding: 10px 20px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-primary:hover:not(:disabled) { background: #4f46e5; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .log-item { display: flex; align-items: center; gap: 12px; background: #1f2937; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid #374151; }
 .log-item--plus { border-left: 4px solid #22c55e; }
 .log-item--minus { border-left: 4px solid #6366f1; }
-.log-icon { font-size: 22px; flex-shrink: 0; }
-.log-info { flex: 1; }
-.log-reason { font-size: 14px; font-weight: 600; color: #f3f4f6; }
-.log-date { font-size: 12px; color: #6b7280; margin-top: 2px; }
-.log-delta { font-size: 17px; font-weight: 800; flex-shrink: 0; }
+.log-icon { font-size: 20px; flex-shrink: 0; }
+.log-info { flex: 1; min-width: 0; }
+.log-reason { font-size: 13px; font-weight: 600; color: #f3f4f6; }
+.log-date { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.log-delta { font-size: 16px; font-weight: 800; flex-shrink: 0; }
 .log-item--plus .log-delta { color: #4ade80; }
 .log-item--minus .log-delta { color: #a5b4fc; }
-.chat-wrap { display: flex; flex-direction: column; height: 460px; background: #1f2937; border-radius: 14px; border: 1px solid #374151; overflow: hidden; }
+
+.chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 260px); min-height: 300px; background: #1f2937; border-radius: 14px; border: 1px solid #374151; overflow: hidden; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .chat-empty { text-align: center; color: #6b7280; font-size: 14px; margin: auto; }
-.chat-bubble { max-width: 75%; display: flex; flex-direction: column; gap: 2px; }
+.chat-bubble { max-width: 80%; display: flex; flex-direction: column; gap: 2px; }
 .chat-bubble--me { align-self: flex-end; align-items: flex-end; }
 .chat-bubble--parent { align-self: flex-start; align-items: flex-start; }
-.chat-bubble__name { font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 2px; }
+.chat-bubble__name { font-size: 11px; color: #6b7280; font-weight: 600; }
 .chat-bubble__body { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4; word-break: break-word; }
 .chat-bubble--me .chat-bubble__body { background: #6366f1; color: #fff; border-bottom-right-radius: 4px; }
 .chat-bubble--parent .chat-bubble__body { background: #374151; color: #f3f4f6; border-bottom-left-radius: 4px; }
-.chat-bubble__time { font-size: 10px; color: #6b7280; margin-top: 2px; }
-.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #374151; background: #1f2937; }
+.chat-bubble__time { font-size: 10px; color: #6b7280; }
+.chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #374151; }
 .chat-input { flex: 1; padding: 10px 14px; background: #111827; border: 1px solid #374151; border-radius: 24px; font-size: 14px; color: #e5e7eb; outline: none; font-family: inherit; }
 .chat-input:focus { border-color: #6366f1; }
-.chat-send-btn { width: 40px; height: 40px; border-radius: 50%; background: #6366f1; color: #fff; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.chat-send-btn { width: 42px; height: 42px; border-radius: 50%; background: #6366f1; color: #fff; border: none; font-size: 18px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
 .chat-send-btn:disabled { background: #374151; cursor: not-allowed; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: flex-end; justify-content: center; z-index: 300; }
+.modal { background: #1f2937; border: 1px solid #374151; border-radius: 20px 20px 0 0; padding: 8px 20px 28px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; }
+.modal__handle { width: 40px; height: 4px; background: #374151; border-radius: 2px; margin: 0 auto 16px; }
+.modal h3 { font-size: 18px; font-weight: 700; color: #e5e7eb; margin-bottom: 16px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
+.field input, .form-textarea { width: 100%; padding: 12px 14px; background: #111827; border: 1px solid #374151; border-radius: 10px; font-size: 15px; color: #e5e7eb; outline: none; font-family: inherit; box-sizing: border-box; }
+.field input:focus, .form-textarea:focus { border-color: #6366f1; }
+.form-textarea { resize: vertical; }
+.error-msg { color: #f87171; font-size: 13px; margin-bottom: 10px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.btn-cancel { flex: 1; padding: 12px; background: transparent; border: 1px solid #374151; border-radius: 10px; color: #9ca3af; font-size: 14px; cursor: pointer; font-family: inherit; }
+.btn-primary { flex: 1; padding: 12px; background: #6366f1; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (min-width: 600px) {
+  .modal-overlay { align-items: center; }
+  .modal { border-radius: 14px; max-width: 380px; }
+  .modal__handle { display: none; }
+  .chat-wrap { height: 460px; }
+}
 </style>

@@ -13,18 +13,26 @@
         <div class="child-card__info">
           <div class="child-card__name">{{ child.name }}</div>
           <div class="child-card__meta">
-            ⭐ {{ child.balance }}
+            <span class="coins-badge">⭐ {{ child.balance }}</span>
             <span v-if="ageLabel(child.birthday)" class="age-badge">{{ ageLabel(child.birthday) }}</span>
             <span v-else class="age-badge age-badge--unknown">возраст не указан</span>
           </div>
+          <div class="child-card__username">@{{ child.username }}</div>
         </div>
         <button class="icon-btn" @click="removeChild(child)" title="Удалить">🗑</button>
       </div>
+
+      <div v-if="!children.length" class="empty-state">
+        <div class="empty-state__icon">👶</div>
+        <div class="empty-state__text">Пока нет детей</div>
+      </div>
+
       <button class="add-btn" @click="showModal = true">+ Добавить ребёнка</button>
     </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="closeAddModal">
       <div class="modal">
+        <div class="modal__handle"></div>
         <h3>Новый ребёнок</h3>
         <div class="field">
           <label>Имя</label>
@@ -32,11 +40,14 @@
         </div>
         <div class="field">
           <label>Логин</label>
-          <input v-model="form.username" type="text" placeholder="ivan123" />
+          <input v-model="form.username" type="text" placeholder="ivan123" autocomplete="off" />
         </div>
         <div class="field">
           <label>Пароль</label>
-          <input v-model="form.password" type="password" />
+          <div class="input-wrap">
+            <input v-model="form.password" :type="showPass ? 'text' : 'password'" autocomplete="new-password" />
+            <button class="eye-btn" type="button" @click="showPass = !showPass">{{ showPass ? '🙈' : '👁' }}</button>
+          </div>
         </div>
         <div class="field">
           <label>День рождения</label>
@@ -54,7 +65,8 @@
 
     <div v-if="avatarModal.show" class="modal-overlay" @click.self="closeAvatarModal">
       <div class="modal modal--avatar">
-        <h3>Фото {{ avatarModal.child && avatarModal.child.name }}</h3>
+        <div class="modal__handle"></div>
+        <h3>Фото — {{ avatarModal.child && avatarModal.child.name }}</h3>
         <div class="avatar-preview-wrap">
           <div class="avatar-preview-circle" :class="avatarModal.preview || (avatarModal.child && avatarModal.child.avatar_url) ? 'avatar-preview-circle--img' : avatarClass(avatarModal.child)">
             <img v-if="avatarModal.preview || (avatarModal.child && avatarModal.child.avatar_url)"
@@ -70,7 +82,7 @@
         <div v-if="avatarModal.error" class="error-msg">{{ avatarModal.error }}</div>
         <div class="modal-actions">
           <button class="btn-outline" @click="closeAvatarModal">Отмена</button>
-          <button v-if="avatarModal.child && avatarModal.child.avatar_url" class="btn-danger" @click="removeAvatar" :disabled="avatarModal.saving">Удалить фото</button>
+          <button v-if="avatarModal.child && avatarModal.child.avatar_url" class="btn-danger" @click="removeAvatar" :disabled="avatarModal.saving">Удалить</button>
           <button class="btn-primary" @click="saveAvatar" :disabled="!avatarModal.preview || avatarModal.saving">
             {{ avatarModal.saving ? "Сохранение..." : "Сохранить" }}
           </button>
@@ -94,6 +106,7 @@ export default {
       showModal: false,
       saving: false,
       error: "",
+      showPass: false,
       form: { name: "", username: "", password: "", birthday: "" },
       avatarModal: { show: false, child: null, preview: null, saving: false, error: "" }
     }
@@ -116,6 +129,7 @@ export default {
     closeAddModal() {
       this.showModal = false
       this.error = ""
+      this.showPass = false
       this.form = { name: "", username: "", password: "", birthday: "" }
     },
     async addChild() {
@@ -157,9 +171,7 @@ export default {
       if (file.size > 5 * 1024 * 1024) { this.avatarModal.error = "Файл слишком большой (макс. 5 МБ)"; return }
       this.avatarModal.error = ""
       const reader = new FileReader()
-      reader.onload = (ev) => {
-        this.compressImage(ev.target.result, (compressed) => { this.avatarModal.preview = compressed })
-      }
+      reader.onload = (ev) => { this.compressImage(ev.target.result, (compressed) => { this.avatarModal.preview = compressed }) }
       reader.readAsDataURL(file)
     },
     compressImage(dataUrl, callback) {
@@ -170,8 +182,7 @@ export default {
         let w = img.width, h = img.height
         if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX } }
         else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX } }
-        canvas.width = w
-        canvas.height = h
+        canvas.width = w; canvas.height = h
         canvas.getContext("2d").drawImage(img, 0, 0, w, h)
         callback(canvas.toDataURL("image/jpeg", 0.85))
       }
@@ -179,25 +190,17 @@ export default {
     },
     async saveAvatar() {
       if (!this.avatarModal.preview) return
-      this.avatarModal.saving = true
-      this.avatarModal.error = ""
+      this.avatarModal.saving = true; this.avatarModal.error = ""
       const { setChildAvatar } = useApi()
-      try {
-        await setChildAvatar(this.avatarModal.child.child_id, this.avatarModal.preview)
-        await this.load()
-        this.closeAvatarModal()
-      } catch (e) { this.avatarModal.error = e.response?.data?.error?.message || "Ошибка" }
+      try { await setChildAvatar(this.avatarModal.child.child_id, this.avatarModal.preview); await this.load(); this.closeAvatarModal() }
+      catch (e) { this.avatarModal.error = e.response?.data?.error?.message || "Ошибка" }
       finally { this.avatarModal.saving = false }
     },
     async removeAvatar() {
-      this.avatarModal.saving = true
-      this.avatarModal.error = ""
+      this.avatarModal.saving = true; this.avatarModal.error = ""
       const { setChildAvatar } = useApi()
-      try {
-        await setChildAvatar(this.avatarModal.child.child_id, "")
-        await this.load()
-        this.closeAvatarModal()
-      } catch (e) { this.avatarModal.error = e.response?.data?.error?.message || "Ошибка" }
+      try { await setChildAvatar(this.avatarModal.child.child_id, ""); await this.load(); this.closeAvatarModal() }
+      catch (e) { this.avatarModal.error = e.response?.data?.error?.message || "Ошибка" }
       finally { this.avatarModal.saving = false }
     }
   }
@@ -207,27 +210,38 @@ export default {
 <style scoped>
 .page-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
 .loading { text-align: center; padding: 60px; color: #888; }
-.child-card { background: #fff; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.child-card__avatar { width: 48px; height: 48px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden; }
+
+.child-card { background: #fff; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.child-card__avatar { width: 52px; height: 52px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden; }
 .child-card__avatar:hover .avatar-overlay { opacity: 1; }
 .avatar--junior { background: #f97316; }
 .avatar--senior { background: #4f7ef7; }
 .avatar--default { background: #9ca3af; }
 .avatar--photo { background: transparent; }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-.avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 18px; opacity: 0; transition: opacity 0.2s; }
-.child-card__info { flex: 1; }
+.avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: 0; transition: opacity 0.2s; }
+.child-card__info { flex: 1; min-width: 0; }
 .child-card__name { font-size: 16px; font-weight: 700; }
-.child-card__meta { font-size: 13px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.child-card__meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.coins-badge { font-size: 14px; font-weight: 700; color: #f59e0b; }
 .age-badge { background: #f0f4ff; color: #4f7ef7; border-radius: 8px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
 .age-badge--unknown { background: #f5f5f5; color: #aaa; }
-.icon-btn { width: 34px; height: 34px; border-radius: 8px; border: none; background: #fee2e2; font-size: 16px; cursor: pointer; color: #dc2626; display: flex; align-items: center; justify-content: center; }
-.add-btn { width: 100%; padding: 14px; background: #f0f4ff; border: 2px dashed #4f7ef7; border-radius: 16px; color: #4f7ef7; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; }
+.child-card__username { font-size: 12px; color: #aaa; margin-top: 2px; }
+.icon-btn { width: 36px; height: 36px; border-radius: 10px; border: none; background: #fee2e2; font-size: 16px; cursor: pointer; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.empty-state { text-align: center; padding: 40px 20px; }
+.empty-state__icon { font-size: 48px; margin-bottom: 10px; }
+.empty-state__text { color: #aaa; font-size: 16px; }
+
+.add-btn { width: 100%; padding: 16px; background: #f0f4ff; border: 2px dashed #4f7ef7; border-radius: 16px; color: #4f7ef7; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; transition: background 0.15s; }
 .add-btn:hover { background: #e8eeff; }
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 300; }
-.modal { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 360px; }
-.modal--avatar { max-width: 310px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 300; }
+.modal { background: #fff; border-radius: 20px 20px 0 0; padding: 8px 20px 24px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; }
+.modal__handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
+.modal--avatar { }
 .modal h3 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 20px; }
+
 .avatar-preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 20px; }
 .avatar-preview-circle { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
 .avatar-preview-circle--img { background: #e8e8e8; }
@@ -236,19 +250,29 @@ export default {
 .avatar--default.avatar-preview-circle { background: #9ca3af; }
 .avatar-preview-img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-preview-letter { font-size: 42px; font-weight: 800; color: #fff; }
-.btn-pick { padding: 9px 18px; background: #f0f4ff; border: 1.5px solid #4f7ef7; border-radius: 10px; color: #4f7ef7; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-pick:hover { background: #e8eeff; }
-.field { margin-bottom: 12px; }
-.field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
-.field input { width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; box-sizing: border-box; font-family: inherit; }
-.field input:focus { border-color: #4f7ef7; }
-.error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 10px; text-align: center; }
-.modal-actions { display: flex; gap: 8px; margin-top: 4px; }
-.btn-outline { flex: 1; padding: 11px; border: 1.5px solid #ddd; background: #fff; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: #666; font-family: inherit; }
-.btn-primary { flex: 1; padding: 11px; background: #4f7ef7; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-pick { padding: 10px 20px; background: #f0f4ff; border: 1.5px solid #4f7ef7; border-radius: 10px; color: #4f7ef7; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+.field input { width: 100%; padding: 13px 14px; border: 1.5px solid #e0e7ff; border-radius: 12px; font-size: 15px; outline: none; box-sizing: border-box; font-family: inherit; background: #fafbff; transition: border-color 0.15s; }
+.field input:focus { border-color: #4f7ef7; background: #fff; }
+
+.input-wrap { position: relative; }
+.input-wrap input { padding-right: 44px; }
+.eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px; }
+
+.error-msg { color: #e53e3e; font-size: 13px; margin-bottom: 12px; text-align: center; background: #fff5f5; padding: 8px; border-radius: 8px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+.btn-outline { flex: 1; padding: 13px; border: 1.5px solid #ddd; background: #fff; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; color: #666; font-family: inherit; }
+.btn-primary { flex: 1; padding: 13px; background: #4f7ef7; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .btn-primary:hover:not(:disabled) { background: #3a6be0; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-danger { flex: 1; padding: 11px; background: #fee2e2; color: #dc2626; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-danger:hover:not(:disabled) { background: #fecaca; }
+.btn-danger { flex: 1; padding: 13px; background: #fee2e2; color: #dc2626; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (min-width: 600px) {
+  .modal-overlay { align-items: center; }
+  .modal { border-radius: 20px; max-width: 400px; }
+  .modal__handle { display: none; }
+}
 </style>

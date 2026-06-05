@@ -13,7 +13,6 @@ export function useAuth() {
     role.value = data.role
 
     const u = data.user || {}
-    // Нормализуем child_id — бэкенд отдаёт child_id в объекте child
     if (data.role === 'child' && !u.child_id && u.child_id !== 0) {
       u.child_id = u.child_id || u.id || u.user_id
     }
@@ -30,6 +29,12 @@ export function useAuth() {
     }
   }
 
+  function updateBalance(newBalance) {
+    if (!user.value) return
+    user.value = { ...user.value, balance: newBalance }
+    localStorage.setItem('kt_user', JSON.stringify(user.value))
+  }
+
   function logout() {
     token.value = null
     role.value = null
@@ -41,5 +46,5 @@ export function useAuth() {
     localStorage.removeItem('kt_age_group')
   }
 
-  return { token, role, user, ageGroup, isLoggedIn, saveAuth, logout }
+  return { token, role, user, ageGroup, isLoggedIn, saveAuth, updateBalance, logout }
 }

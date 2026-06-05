@@ -22,6 +22,7 @@ type Parent struct {
 	Email        string `json:"email"`
 	PasswordHash string `json:"-"`
 	Name         string `json:"name"`
+	IsBlocked    bool   `json:"is_blocked"`
 }
 
 func (p *Parent) Validate() error {
@@ -53,8 +54,8 @@ func (s *Storage) Create(ctx context.Context, p *Parent) error {
 func (s *Storage) GetByEmail(ctx context.Context, email string) (*Parent, error) {
 	p := &Parent{}
 	err := s.db.QueryRow(ctx,
-		`SELECT parent_id, email, password_hash, name FROM parents WHERE email = $1`, email,
-	).Scan(&p.ParentID, &p.Email, &p.PasswordHash, &p.Name)
+		`SELECT parent_id, email, password_hash, name, is_blocked FROM parents WHERE email = $1`, email,
+	).Scan(&p.ParentID, &p.Email, &p.PasswordHash, &p.Name, &p.IsBlocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -64,8 +65,8 @@ func (s *Storage) GetByEmail(ctx context.Context, email string) (*Parent, error)
 func (s *Storage) GetByID(ctx context.Context, id string) (*Parent, error) {
 	p := &Parent{}
 	err := s.db.QueryRow(ctx,
-		`SELECT parent_id, email, password_hash, name FROM parents WHERE parent_id = $1`, id,
-	).Scan(&p.ParentID, &p.Email, &p.PasswordHash, &p.Name)
+		`SELECT parent_id, email, password_hash, name, is_blocked FROM parents WHERE parent_id = $1`, id,
+	).Scan(&p.ParentID, &p.Email, &p.PasswordHash, &p.Name, &p.IsBlocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -233,6 +234,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if p.IsBlocked {
+		respond.Error(w, http.StatusForbidden, "USER_BLOCKED", "user is blocked by administrator")
+		return
+	}
+
 	token, err := auth.GenerateToken(p.ParentID, "parent", "", h.jwtSecret)
 	if err != nil {
 		respond.Error(w, http.StatusInternalServerError, "SERVER_ERROR", "server error")
@@ -308,6 +314,7 @@ func (h *Handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 
 	respond.JSON(w, http.StatusOK, map[string]any{"user": p})
 }
+
 func (h *Handler) GetFamilyChat(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetClaims(r)
 	childID := mux.Vars(r)["childId"]

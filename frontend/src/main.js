@@ -38,27 +38,24 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { top: 0 }
+  }
 })
 
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAdmin) {
     const saved = localStorage.getItem('kt_admin_secret')
-    if (!saved) {
-      next('/admin/login')
-      return
-    }
-    next()
-    return
+    if (!saved) { next('/admin/login'); return }
+    next(); return
   }
 
   const token = localStorage.getItem('kt_token')
   const role = localStorage.getItem('kt_role')
   const ageGroup = localStorage.getItem('kt_age_group')
 
-  if (to.meta.requiresAuth && !token) {
-    next('/login')
-    return
-  }
+  if (to.meta.requiresAuth && !token) { next('/login'); return }
   if (to.meta.role && to.meta.role !== role) {
     if (role === 'parent') next('/parent/dashboard')
     else if (role === 'child') {
